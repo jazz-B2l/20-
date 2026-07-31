@@ -1,0 +1,7 @@
+- [x] Refactor variables in `app/globals.css` to support full dark/light theme with sky-blue / dark-blue colors
+- [x] Implement theme toggle header button and dynamic mount logic in `components/header.tsx`
+- [x] Convert `components/browse-client.tsx` to semantic Tailwind classes and add dark theme gradient support
+- [x] Convert `components/listing-card.tsx` to semantic Tailwind classes
+- [x] Convert `components/listing-detail.tsx` to semantic Tailwind classes
+- [x] Group individual faculty offers under the same university into a single university card dynamically
+- [x] Verify build and functionality

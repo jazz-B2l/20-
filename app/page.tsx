@@ -1,5 +1,31 @@
-import { HomeClient } from '@/components/home-client'
+import { Header } from '@/components/header'
+import { BrowseClient } from '@/components/browse-client'
+import { getListings, getDomains, getWilayas } from '@/lib/data'
 
-export default function Page() {
-  return <HomeClient />
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: '20% - Portail des Masters',
+  description: 'Explorez les programmes de master disponibles dans les universités algériennes',
+}
+
+export default async function Page() {
+  const [listings, domains, wilayas] = await Promise.all([
+    getListings(),
+    getDomains(),
+    getWilayas(),
+  ])
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <BrowseClient 
+          initialListings={listings}
+          domains={domains}
+          wilayas={wilayas}
+        />
+      </main>
+    </div>
+  )
 }
