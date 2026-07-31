@@ -4,10 +4,22 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from './language-context'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
+import {
+  Calendar,
+  Users,
+  ExternalLink,
+  ArrowLeft,
+  ShieldAlert,
+  Building2,
+  FileText,
+  CheckCircle2,
+  Info,
+  Globe,
+  School
+} from 'lucide-react'
 
 interface ListingDetailProps {
   listing: {
@@ -18,10 +30,15 @@ interface ListingDetailProps {
     seats: number
     deadline: string
     portal_url: string
-    prerequisites_fr: string | null
-    prerequisites_ar: string | null
-    last_verified_at: string | null
-    academic_year: string
+    prerequisites_fr?: string | null
+    prerequisites_ar?: string | null
+    master_programs?: string | null
+    required_documents?: string | null
+    notes?: string | null
+    faculty_name?: string | null
+    unit_type?: string | null
+    last_verified_at?: string | null
+    academic_year?: string | null
     university: {
       id: string
       name_fr: string
@@ -38,6 +55,23 @@ interface ListingDetailProps {
   }
 }
 
+function getUniversityInitials(name: string): string {
+  if (!name) return 'UNIV'
+  const clean = name.trim()
+  if (clean === clean.toUpperCase() && clean.length <= 5) {
+    return clean
+  }
+  const words = clean.split(/[\s\-']+/).filter(w => {
+    const l = w.toLowerCase()
+    return l !== 'de' && l !== 'des' && l !== 'et' && l !== 'la' && l !== 'd' && l !== 'l' && w.length > 1
+  })
+  if (words.length > 0) {
+    const initials = words.map(w => w[0].toUpperCase()).join('')
+    if (initials.length > 1) return initials.slice(0, 5)
+  }
+  return clean.slice(0, 3).toUpperCase()
+}
+
 export function ListingDetail({ listing }: ListingDetailProps) {
   const { language, t } = useLanguage()
   const [showCorrectionForm, setShowCorrectionForm] = useState(false)
@@ -46,14 +80,39 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  const specialty = language === 'ar' ? listing.specialty_ar : listing.specialty_fr
-  const university = language === 'ar' ? listing.university.name_ar : listing.university.name_fr
+  const specialty = language === 'ar' ? listing.specialty_ar || listing.specialty_fr : listing.specialty_fr
+  const university = language === 'ar' ? listing.university.name_ar || listing.university.name_fr : listing.university.name_fr
   const domain = language === 'ar' ? listing.domain.name_ar : listing.domain.name_fr
-  const prerequisites = language === 'ar' ? listing.prerequisites_ar : listing.prerequisites_fr
+  const notes = language === 'ar' ? listing.prerequisites_ar || listing.notes : listing.notes || listing.prerequisites_fr
 
-  const deadlineDate = new Date(listing.deadline)
-  const formattedDeadline = deadlineDate.toLocaleDateString(language === 'ar' ? 'ar-DZ' : 'fr-FR')
-  const isDeadlineSoon = deadlineDate < new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  const hasDeadline = listing.deadline && !isNaN(Date.parse(listing.deadline))
+  const deadlineDate = hasDeadline ? new Date(listing.deadline) : null
+  const formattedDeadline = deadlineDate 
+    ? deadlineDate.toLocaleDateString(language === 'ar' ? 'ar-DZ' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) 
+    : (language === 'ar' ? 'غير محدد' : 'Non spécifié')
+
+  // Compute Urgency
+  let urgency = 'normal'
+  let urgencyText = ''
+  if (deadlineDate) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const deadlineClean = new Date(deadlineDate)
+    deadlineClean.setHours(0, 0, 0, 0)
+    const diffTime = deadlineClean.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 0) {
+      urgency = 'closed'
+      urgencyText = language === 'ar' ? 'انتهى التسجيل' : 'Inscriptions closes'
+    } else if (diffDays <= 1) {
+      urgency = 'critical'
+      urgencyText = language === 'ar' ? 'ينتهي اليوم/غداً' : 'Clôture aujourd\'hui/demain'
+    } else if (diffDays <= 7) {
+      urgency = 'warning'
+      urgencyText = language === 'ar' ? 'ينتهي قريباً' : 'Clôture proche (≤ 7j)'
+    }
+  }
 
   const handleSubmitCorrection = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,109 +148,238 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Back link */}
-      <Link href="/browse" className="text-accent hover:text-accent/80 text-sm font-medium">
-        ← {language === 'ar' ? 'العودة' : 'Retour'}
+    <div className="space-y-6 max-w-3xl mx-auto px-2 animate-in fade-in duration-200 select-none text-foreground">
+      
+      {/* Back button */}
+      <Link 
+        href="/" 
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors py-1.5 px-3 rounded-lg hover:bg-card border border-transparent hover:border-border"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        <span>{language === 'ar' ? 'العودة للاستعراض' : 'Retour à l\'accueil'}</span>
       </Link>
 
-      {/* Header */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-start mb-6">
-          {listing.university.logo_url && (
+      {/* Primary Card Header */}
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-xs space-y-4">
+        
+        <div className="flex items-start gap-4">
+          {listing.university.logo_url ? (
             <img
               src={listing.university.logo_url}
               alt={university}
-              className="w-20 h-20 rounded-lg object-cover"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-contain border border-border bg-white p-1.5 shrink-0 shadow-xs"
             />
+          ) : (
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-secondary border border-border flex items-center justify-center text-primary font-bold shrink-0 shadow-xs">
+              <span className="text-sm md:text-base font-extrabold uppercase select-none tracking-wide">
+                {getUniversityInitials(university)}
+              </span>
+            </div>
           )}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{specialty}</h1>
-            <p className="text-lg text-muted-foreground mb-3">{university}</p>
-            <div className="flex gap-2 flex-wrap">
-              <Badge>{listing.level}</Badge>
-              <Badge variant="outline">{listing.academic_year}</Badge>
-              {isDeadlineSoon && <Badge variant="destructive">{language === 'ar' ? 'عاجل' : 'Urgent'}</Badge>}
+
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold bg-secondary border border-border text-muted-foreground px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                {listing.level}
+              </span>
+              {listing.academic_year && (
+                <span className="text-[10px] font-bold bg-secondary border border-border text-muted-foreground px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                  {listing.academic_year}
+                </span>
+              )}
+              
+              {/* Urgency status badges */}
+              {urgency === 'critical' && (
+                <span className="text-[10px] font-bold bg-[#B91C1C]/10 text-[#B91C1C] px-2.5 py-0.5 rounded-md uppercase animate-badge-pulse">
+                  {urgencyText}
+                </span>
+              )}
+              {urgency === 'warning' && (
+                <span className="text-[10px] font-bold bg-[#B45309]/10 text-[#B45309] px-2.5 py-0.5 rounded-md uppercase animate-badge-pulse">
+                  {urgencyText}
+                </span>
+              )}
+              {urgency === 'closed' && (
+                <span className="text-[10px] font-bold bg-[#B91C1C]/10 text-[#B91C1C] px-2.5 py-0.5 rounded-md uppercase tracking-wider border border-[#B91C1C]/20 shadow-2xs">
+                  {urgencyText}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground leading-tight">{specialty}</h1>
+              <p className="text-sm md:text-base font-semibold text-muted-foreground mt-1">{university}</p>
             </div>
           </div>
         </div>
+
       </div>
 
-      {/* Information Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold text-lg text-foreground mb-4">{t('browse.domain')}</h2>
-          <p className="text-foreground">{domain}</p>
+      {/* Grid of Key Info */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {t('browse.domain')}
+          </span>
+          <p className="text-sm font-bold text-foreground">{domain}</p>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold text-lg text-foreground mb-4">{t('listing.seats')}</h2>
-          <p className="text-foreground">{listing.seats} {language === 'ar' ? 'مقعد' : 'places'}</p>
+        {listing.seats > 0 && (
+          <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {t('listing.seats')}
+            </span>
+            <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span>{listing.seats} {language === 'ar' ? 'مقاعد متوفرة' : 'places disponibles'}</span>
+            </p>
+          </div>
+        )}
+
+        <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {t('listing.deadline')}
+          </span>
+          <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span>{formattedDeadline}</span>
+          </p>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold text-lg text-foreground mb-4">{t('listing.deadline')}</h2>
-          <p className="text-foreground">{formattedDeadline}</p>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-xs space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Localisation / Wilaya
+          </span>
+          <p className="text-sm font-bold text-foreground">
+            {listing.university.wilaya}, {listing.university.city}
+          </p>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold text-lg text-foreground mb-4">Wilaya</h2>
-          <p className="text-foreground">{listing.university.wilaya}, {listing.university.city}</p>
-        </div>
       </div>
 
-      {/* Prerequisites */}
-      {prerequisites && (
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold text-lg text-foreground mb-4">{t('listing.prerequisites')}</h2>
-          <p className="text-foreground whitespace-pre-wrap">{prerequisites}</p>
+      {/* Faculty / Unit Details */}
+      {listing.faculty_name && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-xs space-y-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
+            <Building2 className="h-4 w-4" />
+            <span>{language === 'ar' ? 'الكلية / المعهد' : 'Faculté / Institut Rattaché'}</span>
+          </div>
+          <p className="text-base font-bold text-foreground">{listing.faculty_name}</p>
         </div>
       )}
 
-      {/* Links */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button size="lg" asChild>
-          <a href={listing.portal_url} target="_blank" rel="noopener noreferrer">
-            {t('listing.portal')} ↗
-          </a>
-        </Button>
-        {listing.university.website_url && (
-          <Button variant="outline" size="lg" asChild>
-            <a href={listing.university.website_url} target="_blank" rel="noopener noreferrer">
-              {language === 'ar' ? 'موقع الجامعة' : 'Site de l\'université'} ↗
+      {/* Master Programs List */}
+      {listing.master_programs && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
+            <FileText className="h-4 w-4 text-primary" />
+            <span>{language === 'ar' ? 'برامج الماجستير المتاحة (كوتا 20٪)' : 'Programmes de Master Ouverts (Quota 20%)'}</span>
+          </div>
+          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+            {listing.master_programs}
+          </p>
+        </div>
+      )}
+
+      {/* Required Documents */}
+      {listing.required_documents && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span>{language === 'ar' ? 'الملف المطلوب والمستندات' : 'Dossier & Documents Requis'}</span>
+          </div>
+          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+            {listing.required_documents}
+          </p>
+        </div>
+      )}
+
+      {/* Notes / Instructions */}
+      {notes && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            <Info className="h-4 w-4 text-primary" />
+            <span>{language === 'ar' ? 'ملاحظات وتعليمات هامة' : 'Consignes & Remarques'}</span>
+          </div>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+            {notes}
+          </p>
+        </div>
+      )}
+
+      {/* Action CTA Buttons */}
+      <div className="flex flex-wrap items-center gap-3">
+        {listing.portal_url && (
+          urgency === 'closed' ? (
+            <a
+              href={listing.portal_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 border border-border bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 text-sm font-bold py-2.5 px-6 rounded-xl transition-all cursor-pointer select-none"
+            >
+              <span>{language === 'ar' ? 'البوابة (التسجيل منتهي)' : 'Portail (inscriptions closes)'}</span>
+              <ExternalLink className="h-4 w-4" />
             </a>
-          </Button>
+          ) : (
+            <a
+              href={listing.portal_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground text-sm font-bold py-2.5 px-6 rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
+            >
+              <span>{t('listing.portal')}</span>
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )
+        )}
+        {listing.university.website_url && (
+          <a
+            href={listing.university.website_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 bg-secondary hover:bg-secondary/80 border border-border text-muted-foreground hover:text-foreground text-sm font-bold py-2.5 px-6 rounded-xl transition-all cursor-pointer"
+          >
+            <Globe className="h-4 w-4" />
+            <span>{language === 'ar' ? 'موقع الجامعة' : 'Site de l\'université'}</span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
       </div>
 
-      {/* Correction Form */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      {/* Community Suggestion / Correction Form */}
+      <div className="bg-secondary/40 border border-border rounded-xl p-5 shadow-xs">
         {!showCorrectionForm ? (
-          <Button
-            variant="outline"
+          <button
             onClick={() => setShowCorrectionForm(true)}
-            className="w-full"
+            className="w-full py-2.5 px-4 bg-card border border-border hover:border-primary/35 rounded-xl text-xs font-bold text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
           >
-            {t('form.suggest_update')}
-          </Button>
+            <ShieldAlert className="h-3.5 w-3.5" />
+            <span>{t('form.suggest_update')}</span>
+          </button>
         ) : (
           <form onSubmit={handleSubmitCorrection} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+              <ShieldAlert className="h-4 w-4" />
+              <span>{t('form.suggest_update')}</span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-muted-foreground">
                 {t('form.message')}
               </label>
               <Textarea
-                placeholder={language === 'ar' ? 'أخبرنا عن التصحيح...' : 'Décrivez la correction...'}
+                placeholder={language === 'ar' ? 'أخبرنا عن الخطأ أو المعلومات الجديدة بالتفصيل...' : 'Décrivez en détails le changement ou l\'erreur constatée...'}
                 value={correctionMessage}
                 onChange={e => setCorrectionMessage(e.target.value)}
                 required
-                className="bg-background border-border"
+                className="bg-card border-border text-sm rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/25 text-foreground placeholder:text-muted-foreground"
                 rows={4}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-muted-foreground">
                 {t('form.email')}
               </label>
               <Input
@@ -199,16 +387,17 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 placeholder="votre@email.com"
                 value={correctionEmail}
                 onChange={e => setCorrectionEmail(e.target.value)}
-                className="bg-background border-border"
+                className="bg-card border-border text-sm rounded-xl focus:border-primary focus:ring-1 focus:ring-primary/25 text-foreground placeholder:text-muted-foreground"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 pt-1">
               <Button
                 type="submit"
                 disabled={isSubmitting || !correctionMessage.trim()}
+                className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl h-9 cursor-pointer"
               >
-                {isSubmitting ? (language === 'ar' ? 'جاري...' : 'Envoi...') : t('form.submit')}
+                {isSubmitting ? (language === 'ar' ? 'جاري الإرسال...' : 'Envoi...') : t('form.submit')}
               </Button>
               <Button
                 type="button"
@@ -218,19 +407,21 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   setCorrectionMessage('')
                   setCorrectionEmail('')
                 }}
+                className="text-xs font-bold rounded-xl h-9 cursor-pointer border-border hover:bg-card text-muted-foreground"
               >
                 {language === 'ar' ? 'إلغاء' : 'Annuler'}
               </Button>
             </div>
 
             {submitSuccess && (
-              <p className="text-sm text-accent font-medium">
-                {language === 'ar' ? 'تم إرسال التصحيح بنجاح!' : 'Correction envoyée avec succès!'}
+              <p className="text-xs text-primary font-bold bg-primary/10 p-2.5 rounded-lg">
+                {t('form.thanks')}
               </p>
             )}
           </form>
         )}
       </div>
+
     </div>
   )
 }
