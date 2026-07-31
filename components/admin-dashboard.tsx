@@ -1,20 +1,149 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UniversitiesTab } from './admin-universities'
-import { ListingsTab } from './admin-listings'
-import { CorrectionsTab } from './admin-corrections'
 import { User } from '@supabase/supabase-js'
+
+// Import Sub-panels
+import { AdminSidebar, AdminView } from './admin/admin-sidebar'
+import { AdminTopbar } from './admin/admin-topbar'
+import { CommandPalette } from './admin/command-palette'
+import { OppCreateWizard } from './admin/opp-create-wizard'
+import { DashboardHome } from './admin/dashboard-home'
+import { ListingsTab } from './admin-listings'
+import { UniversitiesTab } from './admin-universities'
+import { AcademicUnitsTab } from './admin/admin-academic-units'
+import { MediaLibraryTab } from './admin/admin-media-library'
+import { SuggestedUpdatesDiff } from './admin/suggested-updates-diff'
+import { TrashCenter } from './admin/trash-center'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+import {
+  CalendarDays,
+  Calendar,
+  FileText,
+  Link2,
+  Users,
+  Shield,
+  History,
+  Settings,
+  Plus,
+  Trash2,
+  Globe,
+  Mail,
+  ShieldAlert,
+  Database
+} from 'lucide-react'
 
 export function AdminDashboard({ user }: { user: User }) {
   const router = useRouter()
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState('overview')
+
+  // State Management
+  const [currentView, setCurrentView] = useState<AdminView>('dashboard')
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
+
+  // Sync state from query parameters on load/reload
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const viewParam = params.get('view') as AdminView
+      if (viewParam) {
+        setCurrentView(viewParam)
+      }
+    }
+  }, [])
+
+  // Sync state to query parameters on route change
+  const handleViewChange = (view: AdminView) => {
+    setCurrentView(view)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('view', view)
+      window.history.pushState({}, '', url.toString())
+    }
+  }
+
+  // DB Shared lists states
+  const [domains, setDomains] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [requiredDocs, setRequiredDocs] = useState<any[]>([])
+  const [sources, setSources] = useState<any[]>([])
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [userRoles, setUserRoles] = useState<any[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+
+  // Global keydown listeners for shortcuts (Ctrl+K, Esc, N)
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K: Toggle Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCommandPaletteOpen(prev => !prev)
+      }
+      
+      // Escape: Close all modals
+      if (e.key === 'Escape') {
+        setCommandPaletteOpen(false)
+        setWizardOpen(false)
+      }
+
+      // N: Open Create wizard (if not inside an input/textarea)
+      if (
+        e.key === 'n' &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        !wizardOpen &&
+        !commandPaletteOpen
+      ) {
+        e.preventDefault()
+        setWizardOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalShortcuts)
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts)
+  }, [wizardOpen, commandPaletteOpen])
+
+  // Fetch lists based on selected view to avoid over-fetching
+  useEffect(() => {
+    const fetchViewData = async () => {
+      if (currentView === 'domains') {
+        const { data } = await supabase.from('domains').select('*').order('name_fr')
+        setDomains(data || [])
+      } else if (currentView === 'sessions') {
+        const { data } = await supabase.from('sessions').select('*, opportunity:opportunities(title_fr)').order('academic_year')
+        setSessions(data || [])
+      } else if (currentView === 'events') {
+        const { data } = await supabase.from('events').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
+        setEvents(data || [])
+      } else if (currentView === 'required-documents') {
+        const { data } = await supabase.from('required_documents').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
+        setRequiredDocs(data || [])
+      } else if (currentView === 'sources') {
+        const { data } = await supabase.from('sources').select('*')
+        setSources(data || [])
+      } else if (currentView === 'announcements') {
+        const { data } = await supabase.from('announcements').select('*, university:universities(name_fr)').order('created_at', { ascending: false })
+        setAnnouncements(data || [])
+      } else if (currentView === 'users') {
+        const { data } = await supabase.from('user_roles').select('*')
+        setUserRoles(data || [])
+      } else if (currentView === 'audit-logs') {
+        const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false })
+        setAuditLogs(data || [])
+      }
+    }
+    fetchViewData()
+  }, [currentView])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -22,68 +151,66 @@ export function AdminDashboard({ user }: { user: User }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2 font-bold">
-              <div className="w-8 h-8 bg-accent rounded-md flex items-center justify-center text-accent-foreground text-sm">
-                20
-              </div>
-              Admin
-            </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">{user.email}</span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* 1. Sidebar */}
+      <AdminSidebar currentView={currentView} onViewChange={handleViewChange} />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-md grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="universities">Universities</TabsTrigger>
-            <TabsTrigger value="listings">Listings</TabsTrigger>
-            <TabsTrigger value="corrections">Corrections</TabsTrigger>
-          </TabsList>
+      {/* 2. Main content container */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top Header bar */}
+        <AdminTopbar
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onLogout={handleLogout}
+          userEmail={user.email || 'Admin'}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+          onOpenWizard={() => setWizardOpen(true)}
+        />
 
-          <TabsContent value="overview" className="mt-8">
-            <div className="grid md:grid-cols-4 gap-6">
-              <StatCard title="Total Universities" value="—" />
-              <StatCard title="Total Listings" value="—" />
-              <StatCard title="Published" value="—" />
-              <StatCard title="Pending Review" value="—" />
-            </div>
-          </TabsContent>
+        {/* 3. Main Workspace panel content */}
+        <main className="flex-1 overflow-y-auto p-8">
+          
+          {currentView === 'dashboard' && (
+            <DashboardHome onViewChange={handleViewChange} onOpenWizard={() => setWizardOpen(true)} />
+          )}
 
-          <TabsContent value="universities" className="mt-8">
-            <UniversitiesTab />
-          </TabsContent>
-
-          <TabsContent value="listings" className="mt-8">
+          {currentView === 'opportunities' && (
             <ListingsTab />
-          </TabsContent>
+          )}
 
-          <TabsContent value="corrections" className="mt-8">
-            <CorrectionsTab />
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
-  )
-}
+          {currentView === 'universities' && (
+            <UniversitiesTab />
+          )}
 
-function StatCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="text-sm font-medium text-muted-foreground mb-2">{title}</h3>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
+          {currentView === 'suggested-updates' && (
+            <SuggestedUpdatesDiff />
+          )}
+
+        </main>
+      </div>
+
+      {/* 4. Overlay Command Palette (Ctrl + K) */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onViewChange={handleViewChange}
+        onOpenWizard={() => setWizardOpen(true)}
+      />
+
+      {/* 5. Create Opportunity Form Wizard */}
+      <OppCreateWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onPublishSuccess={() => {
+          alert('Opportunity successfully created and published!')
+          if (currentView === 'opportunities') {
+            // Reload list directly by simulating click or state load
+            window.location.reload()
+          } else {
+            handleViewChange('opportunities')
+          }
+        }}
+      />
     </div>
   )
 }

@@ -21,7 +21,14 @@ export default function AdminPage() {
         return
       }
 
-      const isAdmin = user?.user_metadata?.is_admin === true
+      // Check user_roles table first, fallback to user_metadata
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      const isAdmin = roleData?.role === 'admin' || roleData?.role === 'owner' || user?.user_metadata?.is_admin === true
       if (!isAdmin) {
         router.push('/auth/login')
         return
