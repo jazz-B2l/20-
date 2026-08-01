@@ -43,15 +43,58 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
-    request.nextUrl.pathname.startsWith('/protected') &&
-    !user
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
-    return NextResponse.redirect(url)
+  const protectedRoutes = [
+    '/admin',
+    '/dashboard',
+    '/settings',
+    '/users',
+    '/analytics',
+    '/content',
+    '/cms'
+  ]
+
+  const isProtectedRoute = protectedRoutes.some(
+    route => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+  )
+
+  if (isProtectedRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      return NextResponse.redirect(url)
+    }
+
+    // Role check on the server
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role:roles(name)')
+      .eq('user_id', user.id)
+      .single()
+
+    const roleName = (roleData?.role as any)?.name
+    const isStaff = !!roleName || user?.user_metadata?.is_admin === true
+    if (!isStaff) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // If visiting login page but already logged in as staff, redirect to admin dashboard
+  if (request.nextUrl.pathname === '/auth/login' && user) {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role:roles(name)')
+      .eq('user_id', user.id)
+      .single()
+
+    const roleName = (roleData?.role as any)?.name
+    const isStaff = !!roleName || user?.user_metadata?.is_admin === true
+    if (isStaff) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

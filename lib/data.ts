@@ -29,8 +29,8 @@ export async function getListings(filters?: {
         level,
         description_fr,
         description_ar,
-        university:universities(id, name, city, wilaya, website, logo_url),
-        faculty:faculties(id, name_fr, unit_type, application_link, deadline, master_programs, required_documents, notes),
+        university:universities(id, name, city, wilaya, website, logo_url:logo),
+        faculty:faculties(id, name_fr, unit_type, application_link, deadline, master_programs, required_documents, notes, is_open),
         domain:domains(id, name_fr, name_ar)
       )
     `)
@@ -53,7 +53,9 @@ export async function getListings(filters?: {
       required_documents,
       notes,
       workflow_status,
-      university:universities(id, name, city, wilaya, website, logo_url)
+      is_open,
+      university:universities(id, name, city, wilaya, website, logo_url:logo),
+      domain:domains(id, name_fr, name_ar)
     `)
     .eq('workflow_status', 'published')
 
@@ -83,6 +85,7 @@ export async function getListings(filters?: {
       master_programs: fac.master_programs || null,
       required_documents: fac.required_documents || null,
       notes: fac.notes || null,
+      is_open: fac.is_open !== false,
       faculty_name: fac.name_fr || null,
       unit_type: fac.unit_type || 'faculty',
       university: {
@@ -91,7 +94,7 @@ export async function getListings(filters?: {
         name_ar: '',
         city: uni.city || '',
         wilaya: uni.wilaya || '',
-        logo_url: null,
+        logo_url: uni.logo_url || null,
         website_url: uni.website || ''
       },
       domain: {
@@ -121,6 +124,7 @@ export async function getListings(filters?: {
       master_programs: fac.master_programs || null,
       required_documents: fac.required_documents || null,
       notes: fac.notes || null,
+      is_open: fac.is_open !== false,
       faculty_name: fac.name_fr || null,
       unit_type: fac.unit_type || 'faculty',
       university: {
@@ -129,13 +133,13 @@ export async function getListings(filters?: {
         name_ar: '',
         city: uni.city || '',
         wilaya: uni.wilaya || '',
-        logo_url: null,
+        logo_url: uni.logo_url || null,
         website_url: uni.website || ''
       },
       domain: {
-        id: '',
-        name_fr: 'Tous Domaines',
-        name_ar: 'جميع المجالات'
+        id: (fac.domain as any)?.id || '',
+        name_fr: (fac.domain as any)?.name_fr || 'Tous Domaines',
+        name_ar: (fac.domain as any)?.name_ar || 'جميع المجالات'
       }
     }
   })
@@ -193,8 +197,8 @@ export async function getListingById(id: string) {
         level,
         description_fr,
         description_ar,
-        university:universities(id, name, city, wilaya, website),
-        faculty:faculties(id, name_fr, unit_type, application_link, deadline, master_programs, required_documents, notes),
+        university:universities(id, name, city, wilaya, website, logo_url:logo),
+        faculty:faculties(id, name_fr, unit_type, application_link, deadline, master_programs, required_documents, notes, is_open),
         domain:domains(id, name_fr, name_ar)
       )
     `)
@@ -221,6 +225,7 @@ export async function getListingById(id: string) {
       master_programs: fac.master_programs || null,
       required_documents: fac.required_documents || null,
       notes: fac.notes || null,
+      is_open: fac.is_open !== false,
       faculty_name: fac.name_fr || null,
       unit_type: fac.unit_type || 'faculty',
       last_verified_at: win.last_verified_at,
@@ -231,7 +236,7 @@ export async function getListingById(id: string) {
         name_ar: '',
         city: uni.city || '',
         wilaya: uni.wilaya || '',
-        logo_url: null,
+        logo_url: uni.logo_url || null,
         website_url: uni.website || ''
       },
       domain: {
@@ -253,7 +258,9 @@ export async function getListingById(id: string) {
       master_programs,
       required_documents,
       notes,
-      university:universities(id, name, city, wilaya, website)
+      is_open,
+      university:universities(id, name, city, wilaya, website, logo_url:logo),
+      domain:domains(id, name_fr, name_ar)
     `)
     .eq('id', id)
     .single()
@@ -274,6 +281,7 @@ export async function getListingById(id: string) {
       master_programs: fac.master_programs || null,
       required_documents: fac.required_documents || null,
       notes: fac.notes || null,
+      is_open: fac.is_open !== false,
       faculty_name: fac.name_fr || null,
       unit_type: fac.unit_type || 'faculty',
       last_verified_at: null,
@@ -284,12 +292,13 @@ export async function getListingById(id: string) {
         name_ar: '',
         city: uni.city || '',
         wilaya: uni.wilaya || '',
-        logo_url: null,
+        logo_url: uni.logo_url || null,
         website_url: uni.website || ''
       },
       domain: {
-        name_fr: 'Tous Domaines',
-        name_ar: 'جميع المجالات'
+        id: (fac.domain as any)?.id || '',
+        name_fr: (fac.domain as any)?.name_fr || 'Tous Domaines',
+        name_ar: (fac.domain as any)?.name_ar || 'جميع المجالات'
       }
     }
   }
