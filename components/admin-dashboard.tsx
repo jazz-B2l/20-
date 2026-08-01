@@ -17,6 +17,7 @@ import { AcademicUnitsTab } from './admin/admin-academic-units'
 import { MediaLibraryTab } from './admin/admin-media-library'
 import { SuggestedUpdatesDiff } from './admin/suggested-updates-diff'
 import { TrashCenter } from './admin/trash-center'
+import { TeamTab } from './admin/admin-team'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,7 +42,7 @@ import {
   Database
 } from 'lucide-react'
 
-export function AdminDashboard({ user }: { user: User }) {
+export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, roleName?: string }) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -153,7 +154,7 @@ export function AdminDashboard({ user }: { user: User }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* 1. Sidebar */}
-      <AdminSidebar currentView={currentView} onViewChange={handleViewChange} />
+      <AdminSidebar currentView={currentView} onViewChange={handleViewChange} roleName={roleName} />
 
       {/* 2. Main content container */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -163,6 +164,7 @@ export function AdminDashboard({ user }: { user: User }) {
           onViewChange={handleViewChange}
           onLogout={handleLogout}
           userEmail={user.email || 'Admin'}
+          roleName={roleName}
           onOpenCommandPalette={() => setCommandPaletteOpen(true)}
           onOpenWizard={() => setWizardOpen(true)}
         />
@@ -171,7 +173,7 @@ export function AdminDashboard({ user }: { user: User }) {
         <main className="flex-1 overflow-y-auto p-8">
           
           {currentView === 'dashboard' && (
-            <DashboardHome onViewChange={handleViewChange} onOpenWizard={() => setWizardOpen(true)} />
+            <DashboardHome onViewChange={handleViewChange} onOpenWizard={() => setWizardOpen(true)} roleName={roleName} />
           )}
 
           {currentView === 'opportunities' && (
@@ -184,6 +186,10 @@ export function AdminDashboard({ user }: { user: User }) {
 
           {currentView === 'suggested-updates' && (
             <SuggestedUpdatesDiff />
+          )}
+
+          {currentView === 'team' && (
+            <TeamTab currentUserEmail={user.email || ''} />
           )}
 
         </main>

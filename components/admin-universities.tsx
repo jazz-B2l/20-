@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,8 +34,49 @@ import {
   Calendar,
   Link as LinkIcon,
   BookOpen,
-  FileText
+  FileText,
+  Scale,
+  Languages,
+  Binary,
+  HeartPulse,
+  Leaf,
+  TrendingUp,
+  Atom,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Users
 } from 'lucide-react'
+
+// Icon mapping helper for domain filters
+function getDomainIcon(nameFr: string) {
+  const normalized = nameFr.toLowerCase()
+  if (normalized.includes('droit') || normalized.includes('politique')) {
+    return Scale
+  }
+  if (normalized.includes('lettre') || normalized.includes('langue')) {
+    return Languages
+  }
+  if (normalized.includes('math') || normalized.includes('informatique')) {
+    return Binary
+  }
+  if (normalized.includes('méd') || normalized.includes('santé') || normalized.includes('medecine')) {
+    return HeartPulse
+  }
+  if (normalized.includes('nature') || normalized.includes('vie') || normalized.includes('dnas')) {
+    return Leaf
+  }
+  if (normalized.includes('écon') || normalized.includes('gestion') || normalized.includes('bus')) {
+    return TrendingUp
+  }
+  if (normalized.includes('techno') || normalized.includes('sciences et tech')) {
+    return Atom
+  }
+  if (normalized.includes('humaine') || normalized.includes('sociale')) {
+    return Users
+  }
+  return BookOpen
+}
 
 // 58 Algerian Wilayas dataset with coordinates
 export const WILAYAS = [
@@ -100,6 +142,7 @@ export const WILAYAS = [
 
 export function UniversitiesTab() {
   const supabase = createClient()
+  const router = useRouter()
   const [universities, setUniversities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -145,7 +188,7 @@ export function UniversitiesTab() {
     location_gps: '',
     ranking: '1',
     deadline: '',
-    logo_url: ''
+    logo: ''
   }
 
   const [addFormData, setAddFormData] = useState(emptyForm)
@@ -180,9 +223,9 @@ export function UniversitiesTab() {
       const logoUrl = data.publicUrl
       
       if (isEdit) {
-        setEditFormData(prev => ({ ...prev, logo_url: logoUrl }))
+        setEditFormData(prev => ({ ...prev, logo: logoUrl }))
       } else {
-        setAddFormData(prev => ({ ...prev, logo_url: logoUrl }))
+        setAddFormData(prev => ({ ...prev, logo: logoUrl }))
       }
       
       alert('Logo uploaded successfully!')
@@ -203,9 +246,57 @@ export function UniversitiesTab() {
     deadline: '',
     master_programs: '',
     required_documents: '',
-    notes: ''
+    notes: '',
+    domain_id: '',
+    is_open: true
   }
   const [collegeFormData, setCollegeFormData] = useState(emptyCollegeForm)
+
+  const [domains, setDomains] = useState<any[]>([])
+  const [isAddDomainOpen, setIsAddDomainOpen] = useState(false)
+  const [isEditDomainOpen, setIsEditDomainOpen] = useState(false)
+  const [addDomainSearch, setAddDomainSearch] = useState('')
+  const [editDomainSearch, setEditDomainSearch] = useState('')
+
+  const addDomainRef = useRef<HTMLDivElement>(null)
+  const editDomainRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    loadDomains()
+  }, [])
+
+  const loadDomains = async () => {
+    const { data } = await supabase
+      .from('domains')
+      .select('*')
+      .eq('workflow_status', 'published')
+      .order('name_fr', { ascending: true })
+    setDomains(data || [])
+  }
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (addDomainRef.current && !addDomainRef.current.contains(event.target as Node)) {
+        setIsAddDomainOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (editDomainRef.current && !editDomainRef.current.contains(event.target as Node)) {
+        setIsEditDomainOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   useEffect(() => {
     loadUniversities()
@@ -228,7 +319,7 @@ export function UniversitiesTab() {
       location_gps: selectedUni.location_gps || '',
       ranking: String(selectedUni.ranking || '1'),
       deadline: selectedUni.deadline || '',
-      logo_url: selectedUni.logo_url || ''
+      logo: selectedUni.logo || ''
     })
   }, [selectedUni])
 
@@ -279,6 +370,7 @@ export function UniversitiesTab() {
           location_gps: addFormData.location_gps || null,
           ranking: parseInt(addFormData.ranking) || 1,
           deadline: addFormData.deadline || null,
+          logo: addFormData.logo || null,
           workflow_status: 'published'
         }
       ])
@@ -288,6 +380,7 @@ export function UniversitiesTab() {
       setAddFormData(emptyForm)
       setIsAddOpen(false)
       loadUniversities()
+      router.refresh()
     } else {
       console.error('Error inserting university:', error)
       alert('Error adding university: ' + error.message)
@@ -302,14 +395,13 @@ export function UniversitiesTab() {
       wilaya: uni.wilaya || '',
       city: uni.city || '',
       website: uni.website || '',
-      phone: uni.phone || '',
       email: uni.email || '',
       description_fr: uni.description_fr || '',
       description_ar: uni.description_ar || '',
       location_gps: uni.location_gps || '',
       ranking: String(uni.ranking || '1'),
       deadline: uni.deadline || '',
-      logo_url: uni.logo_url || ''
+      logo: uni.logo || ''
     })
     setIsEditOpen(true)
   }
@@ -333,7 +425,7 @@ export function UniversitiesTab() {
         location_gps: editFormData.location_gps || null,
         ranking: parseInt(editFormData.ranking) || 1,
         deadline: editFormData.deadline || null,
-        logo_url: editFormData.logo_url || null
+        logo: editFormData.logo || null
       })
       .eq('id', idToUpdate)
 
@@ -353,10 +445,11 @@ export function UniversitiesTab() {
           location_gps: editFormData.location_gps || null,
           ranking: parseInt(editFormData.ranking) || 1,
           deadline: editFormData.deadline || null,
-          logo_url: editFormData.logo_url || null
+          logo: editFormData.logo || null
         })
       }
       loadUniversities()
+      router.refresh()
     } else {
       console.error('Error updating university:', error)
       alert('Error updating university: ' + error.message)
@@ -389,6 +482,7 @@ export function UniversitiesTab() {
       }
       setUniToDelete(null)
       loadUniversities()
+      router.refresh()
     } else {
       console.error('Error deleting university:', error)
       alert('Error deleting university: ' + error.message)
@@ -414,7 +508,9 @@ export function UniversitiesTab() {
           deadline: collegeFormData.deadline || null,
           master_programs: collegeFormData.master_programs || null,
           required_documents: collegeFormData.required_documents || null,
-          notes: collegeFormData.notes || null
+          notes: collegeFormData.notes || null,
+          domain_id: collegeFormData.domain_id || null,
+          is_open: collegeFormData.is_open
         }
       ])
 
@@ -423,6 +519,7 @@ export function UniversitiesTab() {
       setCollegeFormData(emptyCollegeForm)
       setIsAddCollegeOpen(false)
       loadColleges()
+      router.refresh()
     } else {
       console.error('Error adding college:', error)
       alert('Error adding college: ' + error.message)
@@ -443,7 +540,9 @@ export function UniversitiesTab() {
         deadline: collegeFormData.deadline || null,
         master_programs: collegeFormData.master_programs || null,
         required_documents: collegeFormData.required_documents || null,
-        notes: collegeFormData.notes || null
+        notes: collegeFormData.notes || null,
+        domain_id: collegeFormData.domain_id || null,
+        is_open: collegeFormData.is_open
       })
       .eq('id', collegeToEdit.id)
 
@@ -451,6 +550,7 @@ export function UniversitiesTab() {
       alert('College updated successfully!')
       setIsEditCollegeOpen(false)
       loadColleges()
+      router.refresh()
     } else {
       console.error('Error updating college:', error)
       alert('Error updating college: ' + error.message)
@@ -478,6 +578,7 @@ export function UniversitiesTab() {
       setIsDeleteCollegeOpen(false)
       setCollegeToDelete(null)
       loadColleges()
+      router.refresh()
     } else {
       console.error('Error deleting college:', error)
       alert('Error deleting college: ' + error.message)
@@ -495,7 +596,9 @@ export function UniversitiesTab() {
       deadline: college.deadline || '',
       master_programs: college.master_programs || '',
       required_documents: college.required_documents || '',
-      notes: college.notes || ''
+      notes: college.notes || '',
+      domain_id: college.domain_id || '',
+      is_open: college.is_open !== false
     })
     setIsEditCollegeOpen(true)
   }
@@ -623,91 +726,109 @@ export function UniversitiesTab() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {uniColleges.map((college) => (
-                      <div
-                        key={college.id}
-                        className="bg-card border border-border rounded-xl p-6 shadow-xs flex flex-col justify-between space-y-4 relative group"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="uppercase text-[9px] tracking-wider font-bold">
-                                  {college.unit_type || 'Faculty'}
-                                </Badge>
-                                {college.deadline && (
-                                  <Badge variant="secondary" className="text-[10px] font-semibold flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    Deadline: {college.deadline}
+                    {uniColleges.map((college) => {
+                      const domainName = domains.find(d => d.id === college.domain_id)?.name_fr
+                      return (
+                        <div
+                          key={college.id}
+                          className="bg-card border border-border rounded-xl p-6 shadow-xs flex flex-col justify-between space-y-4 relative group"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="outline" className="uppercase text-[9px] tracking-wider font-bold">
+                                    {college.unit_type || 'Faculty'}
                                   </Badge>
-                                )}
+                                  {college.is_open === false ? (
+                                    <Badge variant="destructive" className="text-[10px] font-semibold">
+                                      Closed
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-[10px] font-semibold bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                      Open
+                                    </Badge>
+                                  )}
+                                  {domainName && (
+                                    <Badge variant="secondary" className="text-[10px] font-semibold flex items-center gap-1 bg-primary/10 border-primary/20 text-primary">
+                                      <BookOpen className="h-3.5 w-3.5" />
+                                      {domainName}
+                                    </Badge>
+                                  )}
+                                  {college.deadline && (
+                                    <Badge variant="secondary" className="text-[10px] font-semibold flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      Deadline: {college.deadline}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <h3 className="text-lg font-bold text-foreground leading-snug">{college.name_fr}</h3>
                               </div>
-                              <h3 className="text-lg font-bold text-foreground leading-snug">{college.name}</h3>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  title="Edit College"
+                                  onClick={() => openEditCollegeModal(college)}
+                                  className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  title="Delete College"
+                                  onClick={() => openDeleteCollegeModal(college)}
+                                  className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-muted-foreground"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
 
-                            <div className="flex items-center gap-1">
-                              <button
-                                title="Edit College"
-                                onClick={() => openEditCollegeModal(college)}
-                                className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                title="Delete College"
-                                onClick={() => openDeleteCollegeModal(college)}
-                                className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-muted-foreground"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                            {/* Master Programs */}
+                            {college.master_programs && (
+                              <div className="space-y-1 pt-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3" />
+                                  Offered Master Programs
+                                </span>
+                                <p className="text-xs text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/50 leading-relaxed whitespace-pre-wrap">
+                                  {college.master_programs}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Required Documents */}
+                            {college.required_documents && (
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  Required Documents
+                                </span>
+                                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                  {college.required_documents}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Master Programs */}
-                          {college.master_programs && (
-                            <div className="space-y-1 pt-1">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <BookOpen className="h-3 w-3" />
-                                Offered Master Programs
-                              </span>
-                              <p className="text-xs text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/50 leading-relaxed whitespace-pre-wrap">
-                                {college.master_programs}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Required Documents */}
-                          {college.required_documents && (
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                <FileText className="h-3 w-3" />
-                                Required Documents
-                              </span>
-                              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                {college.required_documents}
-                              </p>
-                            </div>
-                          )}
+                          {/* Application Link Footer */}
+                          <div className="pt-3 border-t border-border/60 flex items-center justify-between">
+                            {college.application_link ? (
+                              <a
+                                href={college.application_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+                              >
+                                <LinkIcon className="h-3.5 w-3.5" />
+                                <span>Application Portal Link →</span>
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">No application link added</span>
+                            )}
+                          </div>
                         </div>
-
-                        {/* Application Link Footer */}
-                        <div className="pt-3 border-t border-border/60 flex items-center justify-between">
-                          {college.application_link ? (
-                            <a
-                              href={college.application_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
-                            >
-                              <LinkIcon className="h-3.5 w-3.5" />
-                              <span>Application Portal Link →</span>
-                            </a>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">No application link added</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -783,59 +904,40 @@ export function UniversitiesTab() {
                     />
                   </div>
 
-                  {/* University Logo Toggle Settings */}
+                  {/* University Logo Settings */}
                   <div className="space-y-3 border border-border p-3.5 rounded-xl bg-secondary/15">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="toggle_logo" className="font-bold cursor-pointer">Logo de l'université</Label>
-                        <p className="text-[11px] text-muted-foreground">Activer pour ajouter un logo personnalisé pour l'université.</p>
-                      </div>
-                      <input
-                        id="toggle_logo"
-                        type="checkbox"
-                        checked={!!editFormData.logo_url}
-                        onChange={(e) => {
-                          setEditFormData({
-                            ...editFormData,
-                            logo_url: e.target.checked ? 'placeholder' : ''
-                          })
-                        }}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                      />
-                    </div>
-                    {editFormData.logo_url !== undefined && editFormData.logo_url !== '' && (
-                      <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-150 pt-2 border-t border-border/50">
-                        {editFormData.logo_url && editFormData.logo_url !== 'placeholder' && (
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={editFormData.logo_url}
-                              alt="Logo Preview"
-                              className="w-16 h-16 rounded-xl object-contain border border-border bg-white p-1"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setEditFormData(prev => ({ ...prev, logo_url: '' }))}
-                              className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
-                            >
-                              Supprimer le logo
-                            </button>
-                          </div>
-                        )}
-                        <div className="space-y-1.5">
-                          <Label htmlFor="edit_logo_file" className="text-xs font-semibold text-muted-foreground">
-                            {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
-                          </Label>
-                          <Input
-                            id="edit_logo_file"
-                            type="file"
-                            accept="image/*"
-                            disabled={uploadingLogo}
-                            onChange={(e) => handleLogoUpload(e, true)}
-                            className="bg-card border-border file:bg-secondary file:text-foreground file:border-none file:rounded-md file:px-2.5 file:py-1 file:font-semibold file:cursor-pointer"
-                          />
-                        </div>
+                    <Label className="font-bold">Logo de l'université</Label>
+                    
+                    {editFormData.logo && editFormData.logo !== 'placeholder' && (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={editFormData.logo}
+                          alt="Logo Preview"
+                          className="w-16 h-16 rounded-xl object-contain border border-border bg-white p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData(prev => ({ ...prev, logo: '' }))}
+                          className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Supprimer le logo
+                        </button>
                       </div>
                     )}
+                    
+                    <div className="space-y-1.5">
+                      <Label htmlFor="edit_logo_file" className="text-xs font-semibold text-muted-foreground">
+                        {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
+                      </Label>
+                      <Input
+                        id="edit_logo_file"
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingLogo}
+                        onChange={(e) => handleLogoUpload(e, true)}
+                        className="bg-card border-border file:bg-secondary file:text-foreground file:border-none file:rounded-md file:px-2.5 file:py-1 file:font-semibold file:cursor-pointer"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -966,10 +1068,14 @@ export function UniversitiesTab() {
                     <div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                            <School className="h-5 w-5" />
+                          <div className="w-10 h-10 rounded-lg border border-border bg-white text-primary flex items-center justify-center shrink-0 overflow-hidden">
+                            {uni.logo ? (
+                              <img src={uni.logo} alt={uni.name} className="w-full h-full object-contain p-0.5" />
+                            ) : (
+                              <School className="h-5 w-5 text-primary" />
+                            )}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h3 className="font-bold text-foreground truncate text-base leading-snug">{uni.name}</h3>
                             <p className="text-xs text-muted-foreground">{uni.city}, {uni.wilaya}</p>
                           </div>
@@ -1057,7 +1163,18 @@ export function UniversitiesTab() {
                   ) : (
                     filteredUniversities.map((uni) => (
                       <tr key={uni.id} className="border-b border-border hover:bg-muted/50 last:border-none transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-foreground">{uni.name}</td>
+                        <td className="py-3.5 px-4 font-bold text-foreground">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg border border-border bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                              {uni.logo ? (
+                                <img src={uni.logo} alt={uni.name} className="w-full h-full object-contain p-0.5" />
+                              ) : (
+                                <School className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                            <span className="truncate max-w-[280px]" title={uni.name}>{uni.name}</span>
+                          </div>
+                        </td>
                         <td className="py-3.5 px-4">{uni.wilaya}</td>
                         <td className="py-3.5 px-4">{uni.city}</td>
                         <td className="py-3.5 px-4 font-semibold">Rank #{uni.ranking}</td>
@@ -1207,6 +1324,42 @@ export function UniversitiesTab() {
               />
             </div>
 
+            {/* University Logo Settings */}
+            <div className="space-y-3 border border-border p-3.5 rounded-xl bg-secondary/15">
+              <Label className="font-bold">Logo de l'université</Label>
+              
+              {addFormData.logo && addFormData.logo !== 'placeholder' && (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={addFormData.logo}
+                    alt="Logo Preview"
+                    className="w-16 h-16 rounded-xl object-contain border border-border bg-white p-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAddFormData(prev => ({ ...prev, logo: '' }))}
+                    className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Supprimer le logo
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="add_logo_file" className="text-xs font-semibold text-muted-foreground">
+                  {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
+                </Label>
+                <Input
+                  id="add_logo_file"
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingLogo}
+                  onChange={(e) => handleLogoUpload(e, false)}
+                  className="bg-card border-border file:bg-secondary file:text-foreground file:border-none file:rounded-md file:px-2.5 file:py-1 file:font-semibold file:cursor-pointer"
+                />
+              </div>
+            </div>
+
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
               <Button type="submit" className="cursor-pointer font-semibold">Add University</Button>
@@ -1309,6 +1462,42 @@ export function UniversitiesTab() {
                 value={editFormData.deadline}
                 onChange={(e) => setEditFormData({ ...editFormData, deadline: e.target.value })}
               />
+            </div>
+
+            {/* University Logo Settings */}
+            <div className="space-y-3 border border-border p-3.5 rounded-xl bg-secondary/15">
+              <Label className="font-bold">Logo de l'université</Label>
+              
+              {editFormData.logo && editFormData.logo !== 'placeholder' && (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={editFormData.logo}
+                    alt="Logo Preview"
+                    className="w-16 h-16 rounded-xl object-contain border border-border bg-white p-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditFormData(prev => ({ ...prev, logo: '' }))}
+                    className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Supprimer le logo
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="modal_edit_logo_file" className="text-xs font-semibold text-muted-foreground">
+                  {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
+                </Label>
+                <Input
+                  id="modal_edit_logo_file"
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingLogo}
+                  onChange={(e) => handleLogoUpload(e, true)}
+                  className="bg-card border-border file:bg-secondary file:text-foreground file:border-none file:rounded-md file:px-2.5 file:py-1 file:font-semibold file:cursor-pointer"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1417,6 +1606,148 @@ export function UniversitiesTab() {
               />
             </div>
 
+            {/* Domain Filter Searchable Dropdown */}
+            <div className="space-y-1.5 relative" ref={addDomainRef}>
+              <Label className="flex items-center gap-1.5 font-semibold">
+                <BookOpen className="h-3.5 w-3.5 text-primary" />
+                <span>Domaine d'études</span>
+              </Label>
+              
+              <button
+                type="button"
+                onClick={() => setIsAddDomainOpen(!isAddDomainOpen)}
+                className="w-full bg-card hover:bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between transition-all duration-150 cursor-pointer h-10 shadow-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {(() => {
+                    if (!collegeFormData.domain_id) {
+                      return (
+                        <>
+                          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">-- Choisir un domaine --</span>
+                        </>
+                      )
+                    }
+                    const activeDom = domains.find(d => d.id === collegeFormData.domain_id)
+                    if (!activeDom) {
+                      return (
+                        <>
+                          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">-- Choisir un domaine --</span>
+                        </>
+                      )
+                    }
+                    const IconComp = getDomainIcon(activeDom.name_fr)
+                    return (
+                      <>
+                        <IconComp className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">{activeDom.name_fr}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+                {isAddDomainOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" />}
+              </button>
+
+              {isAddDomainOpen && (
+                <div
+                  className="absolute z-50 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden flex flex-col max-h-[220px]"
+                >
+                  <div className="p-2 border-b border-border flex items-center gap-2 bg-muted/20 shrink-0">
+                    <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un domaine..."
+                      value={addDomainSearch}
+                      onChange={(e) => setAddDomainSearch(e.target.value)}
+                      className="w-full bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground py-1 font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+
+                  <div className="overflow-y-auto py-1 divide-y divide-border/20">
+                    {/* Filtered domains */}
+                    {(() => {
+                      const filtered = domains.filter(dom => 
+                        dom.name_fr.toLowerCase().includes(addDomainSearch.toLowerCase())
+                      )
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="px-4 py-4 text-center text-xs text-muted-foreground italic">
+                            Aucun domaine trouvé
+                          </div>
+                        )
+                      }
+
+                      return filtered.map(dom => {
+                        const IconComp = getDomainIcon(dom.name_fr)
+                        const isSelected = collegeFormData.domain_id === dom.id
+                        return (
+                          <button
+                            key={dom.id}
+                            type="button"
+                            onClick={() => {
+                              setCollegeFormData(prev => ({ ...prev, domain_id: dom.id }))
+                              setIsAddDomainOpen(false)
+                              setAddDomainSearch('')
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                              isSelected ? 'text-primary bg-primary/5 font-semibold' : 'text-foreground'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <IconComp className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{dom.name_fr}</span>
+                            </div>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                          </button>
+                        )
+                      })
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Status Selector */}
+            <div className="space-y-2.5 p-3.5 bg-secondary/10 dark:bg-secondary/5 border border-border rounded-xl">
+              <div>
+                <Label className="font-bold text-sm select-none">
+                  Statut de l'offre / Inscriptions
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  Activer pour garder l'offre ouverte. Désactiver pour forcer la fermeture de l'offre (Inscriptions closes) même si la date limite n'est pas encore dépassée.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCollegeFormData(prev => ({ ...prev, is_open: true }))}
+                  className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-xs font-bold border transition-all cursor-pointer select-none ${
+                    collegeFormData.is_open !== false
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
+                  Ouvert / Actif
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollegeFormData(prev => ({ ...prev, is_open: false }))}
+                  className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-xs font-bold border transition-all cursor-pointer select-none ${
+                    collegeFormData.is_open === false
+                      ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-2xs'
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open === false ? 'bg-destructive' : 'bg-muted-foreground/40'}`} />
+                  Fermé / Clos
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="col_programs">Offered 20% Master Programs / Specializations</Label>
               <Textarea
@@ -1504,6 +1835,148 @@ export function UniversitiesTab() {
                 value={collegeFormData.application_link}
                 onChange={(e) => setCollegeFormData({ ...collegeFormData, application_link: e.target.value })}
               />
+            </div>
+
+            {/* Domain Filter Searchable Dropdown */}
+            <div className="space-y-1.5 relative" ref={editDomainRef}>
+              <Label className="flex items-center gap-1.5 font-semibold">
+                <BookOpen className="h-3.5 w-3.5 text-primary" />
+                <span>Domaine d'études</span>
+              </Label>
+              
+              <button
+                type="button"
+                onClick={() => setIsEditDomainOpen(!isEditDomainOpen)}
+                className="w-full bg-card hover:bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm text-foreground flex items-center justify-between transition-all duration-150 cursor-pointer h-10 shadow-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {(() => {
+                    if (!collegeFormData.domain_id) {
+                      return (
+                        <>
+                          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">-- Choisir un domaine --</span>
+                        </>
+                      )
+                    }
+                    const activeDom = domains.find(d => d.id === collegeFormData.domain_id)
+                    if (!activeDom) {
+                      return (
+                        <>
+                          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">-- Choisir un domaine --</span>
+                        </>
+                      )
+                    }
+                    const IconComp = getDomainIcon(activeDom.name_fr)
+                    return (
+                      <>
+                        <IconComp className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">{activeDom.name_fr}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+                {isEditDomainOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" />}
+              </button>
+
+              {isEditDomainOpen && (
+                <div
+                  className="absolute z-50 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden flex flex-col max-h-[220px]"
+                >
+                  <div className="p-2 border-b border-border flex items-center gap-2 bg-muted/20 shrink-0">
+                    <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un domaine..."
+                      value={editDomainSearch}
+                      onChange={(e) => setEditDomainSearch(e.target.value)}
+                      className="w-full bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground py-1 font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+
+                  <div className="overflow-y-auto py-1 divide-y divide-border/20">
+                    {/* Filtered domains */}
+                    {(() => {
+                      const filtered = domains.filter(dom => 
+                        dom.name_fr.toLowerCase().includes(editDomainSearch.toLowerCase())
+                      )
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="px-4 py-4 text-center text-xs text-muted-foreground italic">
+                            Aucun domaine trouvé
+                          </div>
+                        )
+                      }
+
+                      return filtered.map(dom => {
+                        const IconComp = getDomainIcon(dom.name_fr)
+                        const isSelected = collegeFormData.domain_id === dom.id
+                        return (
+                          <button
+                            key={dom.id}
+                            type="button"
+                            onClick={() => {
+                              setCollegeFormData(prev => ({ ...prev, domain_id: dom.id }))
+                              setIsEditDomainOpen(false)
+                              setEditDomainSearch('')
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                              isSelected ? 'text-primary bg-primary/5 font-semibold' : 'text-foreground'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <IconComp className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{dom.name_fr}</span>
+                            </div>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                          </button>
+                        )
+                      })
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Status Selector */}
+            <div className="space-y-2.5 p-3.5 bg-secondary/10 dark:bg-secondary/5 border border-border rounded-xl">
+              <div>
+                <Label className="font-bold text-sm select-none">
+                  Statut de l'offre / Inscriptions
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  Activer pour garder l'offre ouverte. Désactiver pour forcer la fermeture de l'offre (Inscriptions closes) même si la date limite n'est pas encore dépassée.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCollegeFormData(prev => ({ ...prev, is_open: true }))}
+                  className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-xs font-bold border transition-all cursor-pointer select-none ${
+                    collegeFormData.is_open !== false
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
+                  Ouvert / Actif
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollegeFormData(prev => ({ ...prev, is_open: false }))}
+                  className={`flex items-center justify-center gap-2 py-2 px-3.5 rounded-lg text-xs font-bold border transition-all cursor-pointer select-none ${
+                    collegeFormData.is_open === false
+                      ? 'bg-destructive/10 border-destructive/30 text-destructive shadow-2xs'
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open === false ? 'bg-destructive' : 'bg-muted-foreground/40'}`} />
+                  Fermé / Clos
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
