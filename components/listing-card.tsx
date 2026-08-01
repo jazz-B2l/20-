@@ -41,6 +41,7 @@ interface ListingCardProps {
       master_programs?: string | null
       required_documents?: string | null
       notes?: string | null
+      is_open?: boolean
       faculty_name?: string | null
       unit_type?: string | null
       prerequisites_fr?: string | null
@@ -75,6 +76,20 @@ function getUniversityInitials(name: string): string {
 export function ListingCard({ listing }: ListingCardProps) {
   const { language } = useLanguage()
   const [isExpanded, setIsExpanded] = useState(false)
+  const [expandedOffers, setExpandedOffers] = useState<Record<string, boolean>>(() => {
+    // If there is only one offer, expand it by default
+    if (listing.offers.length === 1) {
+      return { [listing.offers[0].id]: true }
+    }
+    return {}
+  })
+
+  const toggleOfferExpand = (offerId: string) => {
+    setExpandedOffers(prev => ({
+      ...prev,
+      [offerId]: !prev[offerId]
+    }))
+  }
 
   const university = language === 'ar' ? listing.university.name_ar || listing.university.name_fr : listing.university.name_fr
 
@@ -102,7 +117,14 @@ export function ListingCard({ listing }: ListingCardProps) {
   // Compute Urgency of the overall group based on the earliest active deadline
   let urgency = 'normal'
   let urgencyText = ''
-  if (earliestDeadlineDate) {
+
+  const allClosed = listing.offers.every(o => o.is_open === false)
+  const hasForceOpen = listing.offers.some(o => o.is_open === true)
+
+  if (allClosed) {
+    urgency = 'closed'
+    urgencyText = language === 'ar' ? 'انتهى التسجيل' : 'Inscriptions closes'
+  } else if (earliestDeadlineDate && !hasForceOpen) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const deadlineClean = new Date(earliestDeadlineDate)
@@ -285,7 +307,11 @@ export function ListingCard({ listing }: ListingCardProps) {
               : (language === 'ar' ? 'غير محدد' : 'Non spécifié')
             
             let offerUrgency = 'normal'
-            if (offerDeadlineDate) {
+            if (offer.is_open === false) {
+              offerUrgency = 'closed'
+            } else if (offer.is_open === true) {
+              offerUrgency = 'normal'
+            } else if (offerDeadlineDate) {
               const today = new Date()
               today.setHours(0, 0, 0, 0)
               const dClean = new Date(offerDeadlineDate)
@@ -296,95 +322,121 @@ export function ListingCard({ listing }: ListingCardProps) {
               }
             }
 
+            const isOfferExpanded = !!expandedOffers[offer.id]
+
             return (
               <div key={offer.id} className={`${index > 0 ? 'border-t border-border/60 pt-5 mt-5' : ''} space-y-3`}>
                 
                 {/* Faculty / Unit Header Box */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-secondary/20 dark:bg-secondary/10 p-3 rounded-xl border border-border">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleOfferExpand(offer.id)
+                  }}
+                  className={`flex items-center justify-between gap-2 p-3 rounded-xl border transition-colors select-none cursor-pointer ${
+                    offerUrgency === 'closed'
+                      ? 'bg-destructive/10 dark:bg-destructive/5 border-destructive/20 hover:bg-destructive/15'
+                      : 'bg-emerald-500/10 dark:bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/15'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <Building2 className={`h-4 w-4 shrink-0 ${
+                      offerUrgency === 'closed' ? 'text-destructive' : 'text-emerald-500'
+                    }`} />
                     <span className="font-bold text-xs md:text-sm text-foreground">
                       {language === 'ar' ? 'الكلية / المعهد:' : 'Faculté / Institut :'} {offer.faculty_name || 'Général'}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    {offer.seats > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {offer.seats > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          <span><strong>{offer.seats}</strong> places</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
-                        <span><strong>{offer.seats}</strong> places</span>
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{language === 'ar' ? 'الموعد:' : 'Deadline:'} <strong>{formattedOfferDeadline}</strong></span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{language === 'ar' ? 'الموعد:' : 'Deadline:'} <strong>{formattedOfferDeadline}</strong></span>
+                    </div>
+                    {/* Expand/Collapse Chevron icon */}
+                    <div className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors shrink-0">
+                      {isOfferExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </div>
                 </div>
 
-                {/* Details list for this faculty */}
-                <div className="divide-y divide-border/40 text-sm pl-1 pr-1">
-                  
-                  {/* Master Programs */}
-                  {offer.master_programs && (
-                    <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
-                      <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
-                        <FileText className="h-3.5 w-3.5 text-primary" />
-                        {language === 'ar' ? 'البرامج المتاحة' : 'Masters Ouverts'}
-                      </span>
-                      <span className="text-xs md:text-sm text-foreground whitespace-pre-wrap leading-relaxed font-semibold">{offer.master_programs}</span>
+                {/* Details & Actions - Collapsable */}
+                {isOfferExpanded && (
+                  <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {/* Details list for this faculty */}
+                    <div className="divide-y divide-border/40 text-sm pl-1 pr-1">
+                      
+                      {/* Master Programs */}
+                      {offer.master_programs && (
+                        <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
+                          <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
+                            <FileText className="h-3.5 w-3.5 text-primary" />
+                            {language === 'ar' ? 'البرامج المتاحة' : 'Masters Ouverts'}
+                          </span>
+                          <span className="text-xs md:text-sm text-foreground whitespace-pre-wrap leading-relaxed font-semibold">{offer.master_programs}</span>
+                        </div>
+                      )}
+
+                      {/* Required Documents */}
+                      {offer.required_documents && (
+                        <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
+                          <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                            {language === 'ar' ? 'الملف المطلوب' : 'Documents Requis'}
+                          </span>
+                          <span className="text-xs md:text-sm text-foreground whitespace-pre-wrap leading-relaxed font-semibold">{offer.required_documents}</span>
+                        </div>
+                      )}
+
+                      {/* Notes / Prerequisites */}
+                      {offerNotes && (
+                        <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
+                          <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
+                            <Info className="h-3.5 w-3.5 text-primary" />
+                            {language === 'ar' ? 'إرشادات هامّة' : 'Consignes'}
+                          </span>
+                          <span className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed font-medium">{offerNotes}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* Required Documents */}
-                  {offer.required_documents && (
-                    <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
-                      <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                        {language === 'ar' ? 'الملف المطلوب' : 'Documents Requis'}
-                      </span>
-                      <span className="text-xs md:text-sm text-foreground whitespace-pre-wrap leading-relaxed font-semibold">{offer.required_documents}</span>
+                    {/* Apply Button / Action Links for this Faculty */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      {offer.portal_url && (
+                        offerUrgency === 'closed' ? (
+                          <a
+                            href={offer.portal_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 border border-border bg-secondary text-muted-foreground hover:text-foreground text-xs font-bold py-1.5 px-3.5 rounded-lg transition-all"
+                          >
+                            <span>{language === 'ar' ? 'البوابة (مغلق)' : 'Portail (inscriptions closes)'}</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <a
+                            href={offer.portal_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold py-1.5 px-3.5 rounded-lg shadow-xs"
+                          >
+                            <span>{language === 'ar' ? 'رابط التسجيل للمعهد' : 'Postuler pour cette faculté'}</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )
+                      )}
                     </div>
-                  )}
-
-                  {/* Notes / Prerequisites */}
-                  {offerNotes && (
-                    <div className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
-                      <span className="w-full sm:w-44 text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
-                        <Info className="h-3.5 w-3.5 text-primary" />
-                        {language === 'ar' ? 'إرشادات هامّة' : 'Consignes'}
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed font-medium">{offerNotes}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Apply Button / Action Links for this Faculty */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  {offer.portal_url && (
-                    offerUrgency === 'closed' ? (
-                      <a
-                        href={offer.portal_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 border border-border bg-secondary text-muted-foreground hover:text-foreground text-xs font-bold py-1.5 px-3.5 rounded-lg transition-all"
-                      >
-                        <span>{language === 'ar' ? 'البوابة (مغلق)' : 'Portail (inscriptions closes)'}</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <a
-                        href={offer.portal_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold py-1.5 px-3.5 rounded-lg shadow-xs"
-                      >
-                        <span>{language === 'ar' ? 'رابط التسجيل للمعهد' : 'Postuler pour cette faculté'}</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    )
-                  )}
-                </div>
-
+                  </div>
+                )}
               </div>
             )
           })}

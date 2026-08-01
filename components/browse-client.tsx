@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useLanguage } from './language-context'
 import { ListingCard } from './listing-card'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,17 @@ import {
   BookOpen,
   MapPin,
   Calendar,
-  Users
+  Users,
+  Scale,
+  Languages,
+  Binary,
+  HeartPulse,
+  Leaf,
+  TrendingUp,
+  Atom,
+  Check,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -36,6 +46,7 @@ interface Listing {
   master_programs?: string | null
   required_documents?: string | null
   notes?: string | null
+  is_open?: boolean
   faculty_name?: string | null
   unit_type?: string | null
   prerequisites_fr?: string | null
@@ -114,6 +125,36 @@ function ListingSkeleton() {
   )
 }
 
+// Icon mapping helper for domain filters
+function getDomainIcon(nameFr: string) {
+  const normalized = nameFr.toLowerCase()
+  if (normalized.includes('droit') || normalized.includes('politique')) {
+    return Scale
+  }
+  if (normalized.includes('lettre') || normalized.includes('langue')) {
+    return Languages
+  }
+  if (normalized.includes('math') || normalized.includes('informatique')) {
+    return Binary
+  }
+  if (normalized.includes('méd') || normalized.includes('santé') || normalized.includes('medecine')) {
+    return HeartPulse
+  }
+  if (normalized.includes('nature') || normalized.includes('vie') || normalized.includes('dnas')) {
+    return Leaf
+  }
+  if (normalized.includes('écon') || normalized.includes('gestion') || normalized.includes('bus')) {
+    return TrendingUp
+  }
+  if (normalized.includes('techno') || normalized.includes('sciences et tech')) {
+    return Atom
+  }
+  if (normalized.includes('humaine') || normalized.includes('sociale')) {
+    return Users
+  }
+  return BookOpen
+}
+
 export function BrowseClient({
   initialListings,
   domains,
@@ -130,6 +171,22 @@ export function BrowseClient({
   const [showInfo, setShowInfo] = useState(false)
   const [sortBy, setSortBy] = useState<'deadline' | 'seats' | 'recent'>('deadline')
   const [isLoading, setIsLoading] = useState(false)
+
+  const [isDomainOpen, setIsDomainOpen] = useState(false)
+  const [domainSearchQuery, setDomainSearchQuery] = useState('')
+  const domainRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (domainRef.current && !domainRef.current.contains(event.target as Node)) {
+        setIsDomainOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   // Trigger simulated loading effect when filters swap
   useEffect(() => {
@@ -325,6 +382,152 @@ export function BrowseClient({
                 </Select>
               </div>
 
+              {/* Custom Dropdown Domain Filter with Search */}
+              <div className="w-full sm:w-auto min-w-[280px] relative" ref={domainRef}>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  <span>{t('browse.domain')}</span>
+                </label>
+
+                {/* Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsDomainOpen(!isDomainOpen)}
+                  className="w-full bg-secondary/30 hover:bg-secondary/40 border border-border rounded-xl px-3.5 py-2 text-xs font-bold text-foreground flex items-center justify-between transition-all duration-150 cursor-pointer h-9 shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {(() => {
+                      if (!selectedDomain) {
+                        return (
+                          <>
+                            <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                            <span className="truncate">{language === 'ar' ? 'كل المجالات' : 'Tous les domaines'}</span>
+                          </>
+                        )
+                      }
+                      const activeDom = domains.find(d => d.id === selectedDomain)
+                      if (!activeDom) {
+                        return (
+                          <>
+                            <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                            <span className="truncate">{language === 'ar' ? 'كل المجالات' : 'Tous les domaines'}</span>
+                          </>
+                        )
+                      }
+                      const IconComp = getDomainIcon(activeDom.name_fr)
+                      return (
+                        <>
+                          <IconComp className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">{language === 'ar' ? activeDom.name_ar : activeDom.name_fr}</span>
+                        </>
+                      )
+                    })()}
+                  </div>
+                  {isDomainOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5" />}
+                </button>
+
+                {/* Dropdown Menu Panel */}
+                <AnimatePresence>
+                  {isDomainOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute z-50 left-0 right-0 mt-1.5 bg-card border border-border rounded-xl shadow-lg overflow-hidden flex flex-col max-h-[320px]"
+                    >
+                      {/* Search Input Bar */}
+                      <div className="p-2 border-b border-border/80 flex items-center gap-2 bg-muted/20 shrink-0">
+                        <SearchIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+                        <input
+                          type="text"
+                          placeholder={language === 'ar' ? 'ابحث عن مجال...' : 'Rechercher un domaine...'}
+                          value={domainSearchQuery}
+                          onChange={(e) => setDomainSearchQuery(e.target.value)}
+                          className="w-full bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground py-1 font-semibold"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        {domainSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setDomainSearchQuery('')}
+                            className="text-[10px] text-muted-foreground hover:text-foreground font-bold px-1"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Scrollable Domains Options */}
+                      <div className="overflow-y-auto py-1 divide-y divide-border/20">
+                        {/* "All Domains" option */}
+                        {(!domainSearchQuery || 
+                          (language === 'ar' ? 'كل المجالات' : 'Tous les domaines').toLowerCase().includes(domainSearchQuery.toLowerCase())) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedDomain('')
+                              setIsDomainOpen(false)
+                              setDomainSearchQuery('')
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                              selectedDomain === '' ? 'text-primary bg-primary/5' : 'text-foreground'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate">{language === 'ar' ? 'كل المجالات' : 'Tous les domaines'}</span>
+                            </div>
+                            {selectedDomain === '' && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                          </button>
+                        )}
+
+                        {/* Filtered domains */}
+                        {(() => {
+                          const filtered = domains.filter(dom => {
+                            const name = language === 'ar' ? dom.name_ar : dom.name_fr
+                            return name.toLowerCase().includes(domainSearchQuery.toLowerCase())
+                          })
+
+                          if (filtered.length === 0) {
+                            return (
+                              <div className="px-4 py-6 text-center text-xs text-muted-foreground italic font-semibold">
+                                {language === 'ar' ? 'لا يوجد نتائج' : 'Aucun domaine trouvé'}
+                              </div>
+                            )
+                          }
+
+                          return filtered.map(dom => {
+                            const IconComp = getDomainIcon(dom.name_fr)
+                            const isSelected = selectedDomain === dom.id
+                            return (
+                              <button
+                                key={dom.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDomain(dom.id)
+                                  setIsDomainOpen(false)
+                                  setDomainSearchQuery('')
+                                }}
+                                className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                                  isSelected ? 'text-primary bg-primary/5' : 'text-foreground'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 truncate">
+                                  <IconComp className="h-4 w-4 text-primary shrink-0" />
+                                  <span className="truncate">{language === 'ar' ? dom.name_ar : dom.name_fr}</span>
+                                </div>
+                                {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                              </button>
+                            )
+                          })
+                        })()}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               {/* Reset Button */}
               {(search || selectedWilaya || selectedDomain) && (
                 <button
@@ -337,45 +540,6 @@ export function BrowseClient({
               )}
 
             </div>
-
-            {/* Horizontal Scrollable Domains Filter Chips */}
-            <div className="relative pt-1">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
-                <BookOpen className="h-3.5 w-3.5 text-primary" />
-                <span>{t('browse.domain')}</span>
-              </label>
-              
-              <div className="relative flex items-center">
-                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2.5 w-full pr-8">
-                  <button
-                    onClick={() => setSelectedDomain('')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border shrink-0 ${
-                      selectedDomain === ''
-                        ? 'bg-primary border-primary text-primary-foreground shadow-xs scale-[1.03]'
-                        : 'bg-secondary/30 border-border text-muted-foreground hover:border-border/80 hover:bg-secondary/60'
-                    }`}
-                  >
-                    {language === 'ar' ? 'كل المجالات' : 'Tous les domaines'}
-                  </button>
-                  {domains.map(dom => (
-                    <button
-                      key={dom.id}
-                      onClick={() => setSelectedDomain(dom.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border shrink-0 ${
-                        selectedDomain === dom.id
-                          ? 'bg-primary border-primary text-primary-foreground shadow-xs scale-[1.03]'
-                          : 'bg-secondary/30 border-border text-muted-foreground hover:border-border/80 hover:bg-secondary/60'
-                      }`}
-                    >
-                      {language === 'ar' ? dom.name_ar : dom.name_fr}
-                    </button>
-                  ))}
-                </div>
-                {/* Horizontal Fade Edging overlay */}
-                <div className="absolute right-0 top-0 bottom-2.5 w-10 pointer-events-none bg-gradient-to-l from-card to-transparent" />
-              </div>
-            </div>
-
           </div>
 
         </div>
@@ -388,28 +552,6 @@ export function BrowseClient({
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
               {filteredListings.length} {language === 'ar' ? 'برامج مطابقة' : `offre${filteredListings.length !== 1 ? 's' : ''} disponible${filteredListings.length !== 1 ? 's' : ''}`} ({groupedListings.length} {language === 'ar' ? 'جامعة' : `université${groupedListings.length !== 1 ? 's' : ''}`})
             </h2>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
-                {language === 'ar' ? 'ترتيب حسب:' : 'Trier par :'}
-              </span>
-              <Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
-                <SelectTrigger className="bg-card border-border rounded-xl text-xs font-bold text-foreground h-8 w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border rounded-xl text-foreground">
-                  <SelectItem value="deadline" className="text-xs font-semibold">
-                    {language === 'ar' ? 'تاريخ انتهاء التسجيل' : 'Date limite (Deadline)'}
-                  </SelectItem>
-                  <SelectItem value="seats" className="text-xs font-semibold">
-                    {language === 'ar' ? 'المقاعد المتاحة' : 'Places disponibles'}
-                  </SelectItem>
-                  <SelectItem value="recent" className="text-xs font-semibold">
-                    {language === 'ar' ? 'المضافة حديثاً' : 'Récemment ajouté'}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {isLoading ? (

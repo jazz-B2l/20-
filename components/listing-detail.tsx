@@ -35,6 +35,7 @@ interface ListingDetailProps {
     master_programs?: string | null
     required_documents?: string | null
     notes?: string | null
+    is_open?: boolean
     faculty_name?: string | null
     unit_type?: string | null
     last_verified_at?: string | null
@@ -94,7 +95,10 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   // Compute Urgency
   let urgency = 'normal'
   let urgencyText = ''
-  if (deadlineDate) {
+  if (listing.is_open === false) {
+    urgency = 'closed'
+    urgencyText = language === 'ar' ? 'انتهى التسجيل' : 'Inscriptions closes'
+  } else if (deadlineDate && listing.is_open !== true) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const deadlineClean = new Date(deadlineDate)
