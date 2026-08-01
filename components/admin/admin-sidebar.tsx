@@ -80,10 +80,10 @@ export function AdminSidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full select-none">
-      {/* Brand Header */}
+      {/* Brand Header with Top Minimize Toggle */}
       <div className={cn(
         'h-16 flex items-center border-b border-border transition-all duration-300',
-        isCollapsed ? 'px-3 justify-center' : 'px-5 justify-between'
+        isCollapsed ? 'px-3 justify-between' : 'px-4 justify-between'
       )}>
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-extrabold text-lg select-none shadow-xs shrink-0">
@@ -97,11 +97,22 @@ export function AdminSidebar({
           )}
         </div>
 
+        {/* Top Minimize Toggle Button for Desktop */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer shrink-0"
+            title={isCollapsed ? 'Expand sidebar' : 'Minimize sidebar'}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        )}
+
         {/* Mobile close button */}
         {onMobileClose && (
           <button
             onClick={onMobileClose}
-            className="p-1 text-muted-foreground hover:text-foreground rounded-lg lg:hidden cursor-pointer"
+            className="p-1 text-muted-foreground hover:text-foreground rounded-lg lg:hidden cursor-pointer shrink-0"
             title="Close menu"
           >
             <X className="h-5 w-5" />
@@ -148,23 +159,6 @@ export function AdminSidebar({
           </div>
         ))}
       </nav>
-
-      {/* Desktop Minimize Toggle Footer */}
-      {onToggleCollapse && (
-        <div className="p-3 border-t border-border hidden lg:block">
-          <button
-            onClick={onToggleCollapse}
-            className={cn(
-              'w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer',
-              isCollapsed ? 'justify-center' : 'justify-between'
-            )}
-            title={isCollapsed ? 'Expand sidebar' : 'Minimize sidebar'}
-          >
-            {!isCollapsed && <span>Minimize Sidebar</span>}
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-        </div>
-      )}
     </div>
   )
 
