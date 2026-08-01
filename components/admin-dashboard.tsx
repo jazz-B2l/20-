@@ -11,9 +11,36 @@ import { AdminTopbar } from './admin/admin-topbar'
 import { CommandPalette } from './admin/command-palette'
 import { OppCreateWizard } from './admin/opp-create-wizard'
 import { DashboardHome } from './admin/dashboard-home'
+import { ListingsTab } from './admin-listings'
 import { UniversitiesTab } from './admin-universities'
+import { AcademicUnitsTab } from './admin/admin-academic-units'
+import { MediaLibraryTab } from './admin/admin-media-library'
 import { SuggestedUpdatesDiff } from './admin/suggested-updates-diff'
+import { TrashCenter } from './admin/trash-center'
 import { TeamTab } from './admin/admin-team'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+import {
+  CalendarDays,
+  Calendar,
+  FileText,
+  Link2,
+  Users,
+  Shield,
+  History,
+  Settings,
+  Plus,
+  Trash2,
+  Globe,
+  Mail,
+  ShieldAlert,
+  Database
+} from 'lucide-react'
 
 export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, roleName?: string }) {
   const router = useRouter()
@@ -23,10 +50,8 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
   const [currentView, setCurrentView] = useState<AdminView>('dashboard')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
-
-  // Sidebar minimize (desktop) & mobile drawer state
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Sync state from query parameters on load/reload
   useEffect(() => {
@@ -49,6 +74,16 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
     }
   }
 
+  // DB Shared lists states
+  const [domains, setDomains] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [requiredDocs, setRequiredDocs] = useState<any[]>([])
+  const [sources, setSources] = useState<any[]>([])
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [userRoles, setUserRoles] = useState<any[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+
   // Global keydown listeners for shortcuts (Ctrl+K, Esc, N)
   useEffect(() => {
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
@@ -58,11 +93,10 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
         setCommandPaletteOpen(prev => !prev)
       }
       
-      // Escape: Close all modals & drawers
+      // Escape: Close all modals
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false)
         setWizardOpen(false)
-        setMobileOpen(false)
       }
 
       // N: Open Create wizard (if not inside an input/textarea)
@@ -82,6 +116,38 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
     return () => window.removeEventListener('keydown', handleGlobalShortcuts)
   }, [wizardOpen, commandPaletteOpen])
 
+  // Fetch lists based on selected view to avoid over-fetching
+  useEffect(() => {
+    const fetchViewData = async () => {
+      if (currentView === 'domains') {
+        const { data } = await supabase.from('domains').select('*').order('name_fr')
+        setDomains(data || [])
+      } else if (currentView === 'sessions') {
+        const { data } = await supabase.from('sessions').select('*, opportunity:opportunities(title_fr)').order('academic_year')
+        setSessions(data || [])
+      } else if (currentView === 'events') {
+        const { data } = await supabase.from('events').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
+        setEvents(data || [])
+      } else if (currentView === 'required-documents') {
+        const { data } = await supabase.from('required_documents').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
+        setRequiredDocs(data || [])
+      } else if (currentView === 'sources') {
+        const { data } = await supabase.from('sources').select('*')
+        setSources(data || [])
+      } else if (currentView === 'announcements') {
+        const { data } = await supabase.from('announcements').select('*, university:universities(name_fr)').order('created_at', { ascending: false })
+        setAnnouncements(data || [])
+      } else if (currentView === 'users') {
+        const { data } = await supabase.from('user_roles').select('*')
+        setUserRoles(data || [])
+      } else if (currentView === 'audit-logs') {
+        const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false })
+        setAuditLogs(data || [])
+      }
+    }
+    fetchViewData()
+  }, [currentView])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
@@ -89,15 +155,15 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* 1. Sidebar (Responsive Desktop Collapsible & Mobile Drawer) */}
+      {/* 1. Sidebar (Supports Desktop Minimize Collapse + Mobile Responsive Drawer) */}
       <AdminSidebar
         currentView={currentView}
         onViewChange={handleViewChange}
         roleName={roleName}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(prev => !prev)}
-        mobileOpen={mobileOpen}
-        onCloseMobile={() => setMobileOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        isMobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
       />
 
       {/* 2. Main content container */}
@@ -111,10 +177,10 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
           roleName={roleName}
           onOpenCommandPalette={() => setCommandPaletteOpen(true)}
           onOpenWizard={() => setWizardOpen(true)}
-          onToggleMobile={() => setMobileOpen(prev => !prev)}
+          onToggleMobileMenu={() => setMobileMenuOpen(m => !m)}
         />
 
-        {/* 3. Main Workspace panel content (Responsive padding for phone screens) */}
+        {/* 3. Main Workspace panel content (Mobile Responsive Padding) */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           
           {currentView === 'dashboard' && (
@@ -150,7 +216,12 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
         onClose={() => setWizardOpen(false)}
         onPublishSuccess={() => {
           alert('Opportunity successfully created and published!')
-          handleViewChange('universities')
+          if (currentView === 'opportunities') {
+            // Reload list directly by simulating click or state load
+            window.location.reload()
+          } else {
+            handleViewChange('opportunities')
+          }
         }}
       />
     </div>

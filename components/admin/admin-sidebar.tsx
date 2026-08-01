@@ -33,20 +33,20 @@ interface AdminSidebarProps {
   currentView: AdminView
   onViewChange: (view: AdminView) => void
   roleName?: string
-  isCollapsed: boolean
-  onToggleCollapse: () => void
-  mobileOpen: boolean
-  onCloseMobile: () => void
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
+  isMobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 export function AdminSidebar({
   currentView,
   onViewChange,
   roleName = 'viewer',
-  isCollapsed,
+  isCollapsed = false,
   onToggleCollapse,
-  mobileOpen,
-  onCloseMobile,
+  isMobileOpen = false,
+  onMobileClose
 }: AdminSidebarProps) {
   const sections: SidebarSection[] = [
     {
@@ -86,29 +86,31 @@ export function AdminSidebar({
         isCollapsed ? 'px-3 justify-center' : 'px-5 justify-between'
       )}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-extrabold text-lg shrink-0 shadow-xs">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-extrabold text-lg select-none shadow-xs shrink-0">
             20
           </div>
           {!isCollapsed && (
-            <div className="flex flex-col truncate">
+            <div className="flex flex-col min-w-0">
               <span className="font-semibold text-foreground leading-tight truncate">20% CMS</span>
               <span className="text-[10px] text-muted-foreground font-mono leading-none truncate">20% Master Portal</span>
             </div>
           )}
         </div>
 
-        {/* Mobile close button inside header on small screens */}
-        <button
-          onClick={onCloseMobile}
-          className="p-1 text-muted-foreground hover:text-foreground md:hidden cursor-pointer"
-          title="Close drawer"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {/* Mobile close button */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="p-1 text-muted-foreground hover:text-foreground rounded-lg lg:hidden cursor-pointer"
+            title="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Sections */}
-      <nav className="flex-1 py-4 px-2.5 space-y-6 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 py-4 px-2 space-y-6 overflow-y-auto overflow-x-hidden">
         {sections.map((section, idx) => (
           <div key={idx} className="space-y-1">
             {section.title && !isCollapsed && (
@@ -116,10 +118,7 @@ export function AdminSidebar({
                 {section.title}
               </h3>
             )}
-            {section.title && isCollapsed && (
-              <div className="my-2 border-t border-border/40" title={section.title} />
-            )}
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon
                 const isActive = currentView === item.id
@@ -128,14 +127,14 @@ export function AdminSidebar({
                     <button
                       onClick={() => {
                         onViewChange(item.id)
-                        onCloseMobile()
+                        if (onMobileClose) onMobileClose()
                       }}
                       title={isCollapsed ? item.label : undefined}
                       className={cn(
-                        'w-full flex items-center text-sm font-medium rounded-lg transition-all duration-150 cursor-pointer text-left',
-                        isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2',
+                        'w-full flex items-center rounded-md transition-all duration-150 cursor-pointer text-left',
+                        isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2 text-sm font-medium',
                         isActive
-                          ? 'bg-primary/10 text-primary font-bold'
+                          ? 'bg-primary/10 text-primary font-semibold'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       )}
                     >
@@ -150,55 +149,51 @@ export function AdminSidebar({
         ))}
       </nav>
 
-      {/* Footer Minimize / Expand Toggle Button (Desktop only) */}
-      <div className="p-3 border-t border-border hidden md:flex items-center justify-between">
-        <button
-          onClick={onToggleCollapse}
-          className={cn(
-            'w-full flex items-center gap-2 p-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer',
-            isCollapsed ? 'justify-center' : 'justify-start'
-          )}
-          title={isCollapsed ? 'Expand Sidebar' : 'Minimize Sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4 shrink-0 text-primary" />
-              <span>Minimize Sidebar</span>
-            </>
-          )}
-        </button>
-      </div>
+      {/* Desktop Minimize Toggle Footer */}
+      {onToggleCollapse && (
+        <div className="p-3 border-t border-border hidden lg:block">
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              'w-full flex items-center gap-2.5 p-2 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer',
+              isCollapsed ? 'justify-center' : 'justify-between'
+            )}
+            title={isCollapsed ? 'Expand sidebar' : 'Minimize sidebar'}
+          >
+            {!isCollapsed && <span>Minimize Sidebar</span>}
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
+      )}
     </div>
   )
 
   return (
     <>
-      {/* 1. Mobile Drawer Overlay (Small screens < md) */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-            onClick={onCloseMobile}
-          />
-          {/* Drawer content */}
-          <aside className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200">
-            {sidebarContent}
-          </aside>
-        </div>
-      )}
-
-      {/* 2. Desktop Collapsible Sidebar (Medium+ screens >= md) */}
+      {/* 1. Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-col h-screen border-r border-border bg-card transition-all duration-300 shrink-0 select-none',
+          'hidden lg:flex border-r border-border bg-card flex-col h-screen select-none transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >
         {sidebarContent}
       </aside>
+
+      {/* 2. Mobile Responsive Drawer Overlay */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
+            onClick={onMobileClose}
+          />
+          {/* Slide-out Panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-card border-r border-border h-full shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
     </>
   )
 }

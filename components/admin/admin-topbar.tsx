@@ -22,7 +22,7 @@ interface AdminTopbarProps {
   roleName?: string
   onOpenCommandPalette: () => void
   onOpenWizard: () => void
-  onToggleMobile?: () => void
+  onToggleMobileMenu?: () => void
 }
 
 export function AdminTopbar({
@@ -33,7 +33,7 @@ export function AdminTopbar({
   roleName = 'viewer',
   onOpenCommandPalette,
   onOpenWizard,
-  onToggleMobile
+  onToggleMobileMenu
 }: AdminTopbarProps) {
   const isViewer = roleName === 'viewer'
   const [profileOpen, setProfileOpen] = useState(false)
@@ -83,20 +83,20 @@ export function AdminTopbar({
   const breadcrumbs = getBreadcrumbs(currentView)
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30 select-none">
-      {/* Left section: Hamburger menu & Breadcrumbs */}
-      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 select-none">
+      {/* Left section: Breadcrumbs & Mobile Hamburger Toggle */}
+      <div className="flex items-center gap-3 min-w-0">
         <button
-          onClick={onToggleMobile}
-          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer md:hidden shrink-0"
-          title="Open menu"
+          onClick={onToggleMobileMenu}
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg lg:hidden cursor-pointer"
+          title="Toggle Navigation Menu"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-5 w-5 shrink-0" />
         </button>
         
         <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground font-medium truncate">
           {breadcrumbs.map((crumb, idx) => (
-            <div key={idx} className="flex items-center gap-1.5 truncate">
+            <div key={idx} className="flex items-center gap-1.5">
               {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />}
               <span className={idx === breadcrumbs.length - 1 ? 'text-foreground font-semibold truncate' : 'truncate'}>
                 {crumb}
@@ -104,23 +104,18 @@ export function AdminTopbar({
             </div>
           ))}
         </div>
-
-        {/* Mobile current title */}
-        <span className="sm:hidden font-bold text-foreground text-sm truncate">
-          {breadcrumbs[breadcrumbs.length - 1]}
-        </span>
       </div>
 
-      {/* Right section: Search bar, quick create, profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* Right section: Search bar input, quick actions, profile dropdown */}
+      <div className="flex items-center gap-2.5 sm:gap-4">
         {/* Search button that triggers Command Palette */}
         <button
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 text-xs text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-md transition-colors cursor-pointer w-28 sm:w-44 md:w-48 text-left truncate"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-md transition-colors cursor-pointer w-28 sm:w-44 text-left truncate"
         >
           <Search className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Search...</span>
-          <kbd className="ml-auto pointer-events-none hidden md:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-card px-1.5 font-mono text-[9px] font-medium opacity-100">
+          <kbd className="ml-auto pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-card px-1.5 font-mono text-[9px] font-medium opacity-100">
             <span className="text-[10px]">Ctrl</span>K
           </kbd>
         </button>
@@ -131,9 +126,9 @@ export function AdminTopbar({
             <Button
               size="sm"
               onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-              className="flex items-center gap-1 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-2.5 sm:px-3.5 py-1.5 text-xs"
+              className="flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Create</span>
             </Button>
 
@@ -149,9 +144,9 @@ export function AdminTopbar({
                       setCreateDropdownOpen(false)
                       onOpenWizard()
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted font-medium flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 hover:bg-muted font-medium flex items-center gap-2 cursor-pointer"
                   >
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <Sparkles className="h-4 w-4 text-primary shrink-0" />
                     Opportunity
                   </button>
                   <button
@@ -159,7 +154,7 @@ export function AdminTopbar({
                       setCreateDropdownOpen(false)
                       onViewChange('universities')
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
                   >
                     Institution / University
                   </button>
@@ -168,7 +163,7 @@ export function AdminTopbar({
                       setCreateDropdownOpen(false)
                       onViewChange('announcements')
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
                   >
                     Announcement
                   </button>
@@ -177,7 +172,7 @@ export function AdminTopbar({
                       setCreateDropdownOpen(false)
                       onViewChange('academic-units')
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
                   >
                     Academic Unit
                   </button>
@@ -186,7 +181,7 @@ export function AdminTopbar({
                       setCreateDropdownOpen(false)
                       onViewChange('media-library')
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
                   >
                     Upload Media
                   </button>
@@ -195,6 +190,12 @@ export function AdminTopbar({
             )}
           </div>
         )}
+
+        {/* Notification Bell */}
+        <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all cursor-pointer relative">
+          <Bell className="h-4.5 w-4.5" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+        </button>
 
         {/* Profile menu */}
         <div className="relative">
@@ -211,7 +212,7 @@ export function AdminTopbar({
                 className="fixed inset-0 z-40"
                 onClick={() => setProfileOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
+              <div className="absolute right-0 mt-2 w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
                 <div className="px-4 py-1.5 border-b border-border mb-1.5">
                   <p className="font-semibold text-foreground truncate">{userEmail}</p>
                   <p className="text-xs text-muted-foreground capitalize">{roleName.replace('_', ' ')}</p>
@@ -221,7 +222,7 @@ export function AdminTopbar({
                     setProfileOpen(false)
                     onViewChange('settings')
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2 cursor-pointer"
                 >
                   <User className="h-4 w-4" />
                   My Settings
@@ -231,7 +232,7 @@ export function AdminTopbar({
                     setProfileOpen(false)
                     onLogout()
                   }}
-                  className="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/5 flex items-center gap-2"
+                  className="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/5 flex items-center gap-2 cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out
