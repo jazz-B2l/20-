@@ -83,11 +83,12 @@ export default function Page() {
       // Check if user is admin/owner via user_roles table or user_metadata fallback
       const { data: roleData } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role:roles(name)')
         .eq('user_id', user.id)
         .single()
 
-      const isAdmin = roleData?.role === 'admin' || roleData?.role === 'owner' || user?.user_metadata?.is_admin === true
+      const roleName = (roleData?.role as any)?.name
+      const isAdmin = !!roleName || user?.user_metadata?.is_admin === true
       if (!isAdmin) {
         await supabase.auth.signOut()
         throw new Error('Not authorized as admin')
