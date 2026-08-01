@@ -22,6 +22,7 @@ interface AdminTopbarProps {
   roleName?: string
   onOpenCommandPalette: () => void
   onOpenWizard: () => void
+  onToggleMobile?: () => void
 }
 
 export function AdminTopbar({
@@ -31,7 +32,8 @@ export function AdminTopbar({
   userEmail,
   roleName = 'viewer',
   onOpenCommandPalette,
-  onOpenWizard
+  onOpenWizard,
+  onToggleMobile
 }: AdminTopbarProps) {
   const isViewer = roleName === 'viewer'
   const [profileOpen, setProfileOpen] = useState(false)
@@ -81,33 +83,44 @@ export function AdminTopbar({
   const breadcrumbs = getBreadcrumbs(currentView)
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-30 select-none">
-      {/* Left section: Breadcrumbs & search shortcut */}
-      <div className="flex items-center gap-4">
-        <Menu className="h-5 w-5 text-muted-foreground cursor-pointer lg:hidden" />
+    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30 select-none">
+      {/* Left section: Hamburger menu & Breadcrumbs */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <button
+          onClick={onToggleMobile}
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer md:hidden shrink-0"
+          title="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
+        <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground font-medium truncate">
           {breadcrumbs.map((crumb, idx) => (
-            <div key={idx} className="flex items-center gap-1.5">
-              {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />}
-              <span className={idx === breadcrumbs.length - 1 ? 'text-foreground font-semibold' : ''}>
+            <div key={idx} className="flex items-center gap-1.5 truncate">
+              {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />}
+              <span className={idx === breadcrumbs.length - 1 ? 'text-foreground font-semibold truncate' : 'truncate'}>
                 {crumb}
               </span>
             </div>
           ))}
         </div>
+
+        {/* Mobile current title */}
+        <span className="sm:hidden font-bold text-foreground text-sm truncate">
+          {breadcrumbs[breadcrumbs.length - 1]}
+        </span>
       </div>
 
-      {/* Right section: Search bar input, quick actions, profile dropdown */}
-      <div className="flex items-center gap-4">
+      {/* Right section: Search bar, quick create, profile */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Search button that triggers Command Palette */}
         <button
           onClick={onOpenCommandPalette}
-          className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-md transition-colors cursor-pointer w-48 text-left"
+          className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 text-xs text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-md transition-colors cursor-pointer w-28 sm:w-44 md:w-48 text-left truncate"
         >
-          <Search className="h-3.5 w-3.5" />
-          <span>Search anything...</span>
-          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-card px-1.5 font-mono text-[9px] font-medium opacity-100">
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Search...</span>
+          <kbd className="ml-auto pointer-events-none hidden md:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-card px-1.5 font-mono text-[9px] font-medium opacity-100">
             <span className="text-[10px]">Ctrl</span>K
           </kbd>
         </button>
@@ -118,10 +131,10 @@ export function AdminTopbar({
             <Button
               size="sm"
               onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-              className="flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-3.5 py-1.5"
+              className="flex items-center gap-1 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-2.5 sm:px-3.5 py-1.5 text-xs"
             >
               <Plus className="h-4 w-4" />
-              <span>Create</span>
+              <span className="hidden sm:inline">Create</span>
             </Button>
 
             {createDropdownOpen && (
@@ -183,17 +196,11 @@ export function AdminTopbar({
           </div>
         )}
 
-        {/* Notification Bell */}
-        <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all cursor-pointer relative">
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-        </button>
-
         {/* Profile menu */}
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-muted border border-border text-foreground hover:border-primary transition-all cursor-pointer overflow-hidden font-bold text-xs"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-muted border border-border text-foreground hover:border-primary transition-all cursor-pointer overflow-hidden font-bold text-xs shrink-0"
           >
             {userEmail ? userEmail.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
           </button>
@@ -204,7 +211,7 @@ export function AdminTopbar({
                 className="fixed inset-0 z-40"
                 onClick={() => setProfileOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
+              <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
                 <div className="px-4 py-1.5 border-b border-border mb-1.5">
                   <p className="font-semibold text-foreground truncate">{userEmail}</p>
                   <p className="text-xs text-muted-foreground capitalize">{roleName.replace('_', ' ')}</p>
