@@ -5,7 +5,8 @@ import {
   LayoutDashboard,
   School,
   GitPullRequest,
-  GraduationCap
+  GraduationCap,
+  Users
 } from 'lucide-react'
 
 export type AdminView =
@@ -13,6 +14,7 @@ export type AdminView =
   | 'opportunities'
   | 'universities'
   | 'suggested-updates'
+  | 'team'
 
 interface SidebarItem {
   id: AdminView
@@ -28,9 +30,10 @@ interface SidebarSection {
 interface AdminSidebarProps {
   currentView: AdminView
   onViewChange: (view: AdminView) => void
+  roleName?: string
 }
 
-export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
+export function AdminSidebar({ currentView, onViewChange, roleName = 'viewer' }: AdminSidebarProps) {
   const sections: SidebarSection[] = [
     {
       items: [
@@ -52,6 +55,16 @@ export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
     }
   ]
 
+  const canAccessTeam = roleName === 'super_admin' || roleName === 'owner'
+  if (canAccessTeam) {
+    sections.push({
+      title: 'Administration',
+      items: [
+        { id: 'team', label: 'Team & Access', icon: Users }
+      ]
+    })
+  }
+
   return (
     <aside className="w-64 border-r border-border bg-card flex flex-col h-screen overflow-y-auto select-none">
       {/* Brand Header */}
@@ -60,7 +73,7 @@ export function AdminSidebar({ currentView, onViewChange }: AdminSidebarProps) {
           20
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold text-foreground leading-tight">Antigravity CMS</span>
+          <span className="font-semibold text-foreground leading-tight">20% CMS</span>
           <span className="text-[10px] text-muted-foreground font-mono leading-none">20% Master Portal</span>
         </div>
       </div>
