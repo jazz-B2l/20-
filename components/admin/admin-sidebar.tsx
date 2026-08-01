@@ -43,7 +43,6 @@ export function AdminSidebar({ currentView, onViewChange, roleName = 'viewer' }:
     {
       title: '20% Master Units',
       items: [
-        { id: 'opportunities', label: 'Listings / Programs', icon: GraduationCap },
         { id: 'universities', label: 'Universities & Colleges', icon: School }
       ]
     },

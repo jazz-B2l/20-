@@ -20,7 +20,8 @@ import {
   Square
 } from 'lucide-react'
 
-export function ListingsTab() {
+export function ListingsTab({ roleName = 'viewer' }: { roleName?: string }) {
+  const isViewer = roleName === 'viewer'
   const supabase = createClient()
   const [opportunities, setOpportunities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -217,7 +218,7 @@ export function ListingsTab() {
         </div>
 
         {/* Bulk Action Controls */}
-        {selectedIds.length > 0 && (
+        {!isViewer && selectedIds.length > 0 && (
           <div className="flex items-center gap-2 bg-[#0F7B5C]/5 border border-[#0F7B5C]/25 rounded-xl px-4 py-1.5 text-xs font-semibold animate-in slide-in-from-top duration-150 select-none">
             <span className="text-[#0F7B5C]">{selectedIds.length} selected</span>
             <span className="text-muted-foreground/45">|</span>
@@ -242,31 +243,33 @@ export function ListingsTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/20 text-[#6B6B63] select-none">
-              <th className="py-3 px-4 text-left w-10">
-                <button
-                  onClick={toggleSelectAll}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  {selectedIds.length === filteredOpps.length && filteredOpps.length > 0 ? (
-                    <CheckSquare className="h-4 w-4" />
-                  ) : (
-                    <Square className="h-4 w-4" />
-                  )}
-                </button>
-              </th>
+              {!isViewer && (
+                <th className="py-3 px-4 text-left w-10">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    {selectedIds.length === filteredOpps.length && filteredOpps.length > 0 ? (
+                      <CheckSquare className="h-4 w-4" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </button>
+                </th>
+              )}
               <th className="py-3 px-4 text-left font-semibold">Title</th>
               <th className="py-3 px-4 text-left font-semibold">University</th>
               <th className="py-3 px-4 text-left font-semibold">Level</th>
               <th className="py-3 px-4 text-left font-semibold">Domain</th>
               <th className="py-3 px-4 text-left font-semibold">Session Seats</th>
               <th className="py-3 px-4 text-left font-semibold">Status</th>
-              <th className="py-3 px-4 text-right font-semibold">Actions</th>
+              {!isViewer && <th className="py-3 px-4 text-right font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {filteredOpps.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-[#6B6B63] text-sm font-semibold">
+                <td colSpan={isViewer ? 6 : 8} className="text-center py-12 text-[#6B6B63] text-sm font-semibold">
                   No opportunities match your search parameters.
                 </td>
               </tr>
@@ -285,18 +288,20 @@ export function ListingsTab() {
                       isSelected ? 'bg-primary/5 hover:bg-primary/5' : ''
                     }`}
                   >
-                    <td className="py-3.5 px-4 text-left">
-                      <button
-                        onClick={() => toggleSelect(win.id)}
-                        className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      >
-                        {isSelected ? (
-                          <CheckSquare className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Square className="h-4 w-4" />
-                        )}
-                      </button>
-                    </td>
+                    {!isViewer && (
+                      <td className="py-3.5 px-4 text-left">
+                        <button
+                          onClick={() => toggleSelect(win.id)}
+                          className="text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </button>
+                      </td>
+                    )}
                     <td className="py-3.5 px-4 font-bold text-foreground">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="h-4.5 w-4.5 text-muted-foreground" />
@@ -325,37 +330,39 @@ export function ListingsTab() {
                         {isPublished ? 'published' : 'draft'}
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          title="Duplicate"
-                          onClick={() => handleDuplicate(win)}
-                          className="cursor-pointer"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          title={isPublished ? 'Set as Draft' : 'Publish'}
-                          onClick={() => handleUpdateStatus(win.id, isPublished ? 'draft' : 'published')}
-                          className="cursor-pointer text-primary"
-                        >
-                          <CheckCircle className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          title="Delete Listing"
-                          onClick={() => handleDelete(win.id)}
-                          className="cursor-pointer text-destructive hover:bg-destructive/5"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </td>
+                    {!isViewer && (
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            title="Duplicate"
+                            onClick={() => handleDuplicate(win)}
+                            className="cursor-pointer"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            title={isPublished ? 'Set as Draft' : 'Publish'}
+                            onClick={() => handleUpdateStatus(win.id, isPublished ? 'draft' : 'published')}
+                            className="cursor-pointer text-primary"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            title="Delete Listing"
+                            onClick={() => handleDelete(win.id)}
+                            className="cursor-pointer text-destructive hover:bg-destructive/5"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 )
               })

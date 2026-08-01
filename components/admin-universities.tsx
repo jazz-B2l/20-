@@ -140,7 +140,8 @@ export const WILAYAS = [
   { id: 58, arabic: 'المنيعة', french: 'El Menia', latitude: 30.5841144, longitude: 2.88219452 }
 ]
 
-export function UniversitiesTab() {
+export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) {
+  const isViewer = roleName === 'viewer'
   const supabase = createClient()
   const router = useRouter()
   const [universities, setUniversities] = useState<any[]>([])
@@ -648,15 +649,17 @@ export function UniversitiesTab() {
               </div>
             </div>
 
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => openDeleteModal(selectedUni)}
-              className="cursor-pointer font-semibold flex items-center gap-1.5"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete University
-            </Button>
+            {!isViewer && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openDeleteModal(selectedUni)}
+                className="cursor-pointer font-semibold flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete University
+              </Button>
+            )}
           </div>
 
           {/* Sub Navigation Tabs */}
@@ -664,7 +667,7 @@ export function UniversitiesTab() {
             <div className="flex items-center gap-1.5">
               {[
                 { id: 'colleges', label: 'Colleges & 20% Master Units', icon: Network },
-                { id: 'settings', label: 'University Settings', icon: Settings }
+                ...(!isViewer ? [{ id: 'settings', label: 'University Settings', icon: Settings }] : [])
               ].map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeSubTab === tab.id
@@ -685,7 +688,7 @@ export function UniversitiesTab() {
               })}
             </div>
 
-            {activeSubTab === 'colleges' && (
+            {!isViewer && activeSubTab === 'colleges' && (
               <Button
                 onClick={() => {
                   setCollegeFormData(emptyCollegeForm)
@@ -765,22 +768,24 @@ export function UniversitiesTab() {
                                 <h3 className="text-lg font-bold text-foreground leading-snug">{college.name_fr}</h3>
                               </div>
 
-                              <div className="flex items-center gap-1">
-                                <button
-                                  title="Edit College"
-                                  onClick={() => openEditCollegeModal(college)}
-                                  className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  title="Delete College"
-                                  onClick={() => openDeleteCollegeModal(college)}
-                                  className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-muted-foreground"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
+                              {!isViewer && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    title="Edit College"
+                                    onClick={() => openEditCollegeModal(college)}
+                                    className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    title="Delete College"
+                                    onClick={() => openDeleteCollegeModal(college)}
+                                    className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-muted-foreground"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
 
                             {/* Master Programs */}
@@ -1012,10 +1017,12 @@ export function UniversitiesTab() {
                 </button>
               </div>
 
-              <Button onClick={() => setIsAddOpen(true)} className="cursor-pointer flex items-center gap-1.5 font-semibold">
-                <Plus className="h-4 w-4" />
-                Add University
-              </Button>
+              {!isViewer && (
+                <Button onClick={() => setIsAddOpen(true)} className="cursor-pointer flex items-center gap-1.5 font-semibold">
+                  <Plus className="h-4 w-4" />
+                  Add University
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1113,26 +1120,30 @@ export function UniversitiesTab() {
                     <div className="flex items-center justify-between mt-4 border-t border-border/60 pt-3 text-xs font-semibold text-muted-foreground">
                       <span className="text-[10px] uppercase tracking-wider">Rank #{uni.ranking}</span>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          title="Quick Edit"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openEditModal(uni)
-                          }}
-                          className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          title="Delete University"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openDeleteModal(uni)
-                          }}
-                          className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-destructive/80"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {!isViewer && (
+                          <>
+                            <button
+                              title="Quick Edit"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openEditModal(uni)
+                              }}
+                              className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="Delete University"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openDeleteModal(uni)
+                              }}
+                              className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-destructive/80"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
                         <span className="text-primary font-bold text-[10px] uppercase tracking-wider ml-1">Configure Colleges →</span>
                       </div>
                     </div>
@@ -1191,24 +1202,28 @@ export function UniversitiesTab() {
                             >
                               Configure Colleges
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              title="Edit"
-                              onClick={() => openEditModal(uni)}
-                              className="cursor-pointer hover:text-primary"
-                            >
-                              <Edit className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              title="Delete"
-                              onClick={() => openDeleteModal(uni)}
-                              className="cursor-pointer text-destructive hover:bg-destructive/5"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!isViewer && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  title="Edit"
+                                  onClick={() => openEditModal(uni)}
+                                  className="cursor-pointer hover:text-primary"
+                                >
+                                  <Edit className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  title="Delete"
+                                  onClick={() => openDeleteModal(uni)}
+                                  className="cursor-pointer text-destructive hover:bg-destructive/5"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

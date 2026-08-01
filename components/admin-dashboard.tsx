@@ -176,12 +176,8 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
             <DashboardHome onViewChange={handleViewChange} onOpenWizard={() => setWizardOpen(true)} roleName={roleName} />
           )}
 
-          {currentView === 'opportunities' && (
-            <ListingsTab />
-          )}
-
           {currentView === 'universities' && (
-            <UniversitiesTab />
+            <UniversitiesTab roleName={roleName} />
           )}
 
           {currentView === 'suggested-updates' && (

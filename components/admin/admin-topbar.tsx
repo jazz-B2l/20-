@@ -19,6 +19,7 @@ interface AdminTopbarProps {
   onViewChange: (view: AdminView) => void
   onLogout: () => void
   userEmail: string
+  roleName?: string
   onOpenCommandPalette: () => void
   onOpenWizard: () => void
 }
@@ -28,9 +29,11 @@ export function AdminTopbar({
   onViewChange,
   onLogout,
   userEmail,
+  roleName = 'viewer',
   onOpenCommandPalette,
   onOpenWizard
 }: AdminTopbarProps) {
+  const isViewer = roleName === 'viewer'
   const [profileOpen, setProfileOpen] = useState(false)
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false)
 
@@ -109,74 +112,76 @@ export function AdminTopbar({
           </kbd>
         </button>
 
-        {/* Quick create dropdown button */}
-        <div className="relative">
-          <Button
-            size="sm"
-            onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-            className="flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-3.5 py-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create</span>
-          </Button>
+        {/* Quick create dropdown button (Hidden for viewer) */}
+        {!isViewer && (
+          <div className="relative">
+            <Button
+              size="sm"
+              onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
+              className="flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-3.5 py-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create</span>
+            </Button>
 
-          {createDropdownOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setCreateDropdownOpen(false)}
-              />
-              <div className="absolute right-0 mt-1.5 w-52 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-1 z-50 text-sm">
-                <button
-                  onClick={() => {
-                    setCreateDropdownOpen(false)
-                    onOpenWizard()
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted font-medium flex items-center gap-2"
-                >
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  Opportunity
-                </button>
-                <button
-                  onClick={() => {
-                    setCreateDropdownOpen(false)
-                    onViewChange('universities')
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted"
-                >
-                  Institution / University
-                </button>
-                <button
-                  onClick={() => {
-                    setCreateDropdownOpen(false)
-                    onViewChange('announcements')
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted"
-                >
-                  Announcement
-                </button>
-                <button
-                  onClick={() => {
-                    setCreateDropdownOpen(false)
-                    onViewChange('academic-units')
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted"
-                >
-                  Academic Unit
-                </button>
-                <button
-                  onClick={() => {
-                    setCreateDropdownOpen(false)
-                    onViewChange('media-library')
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted"
-                >
-                  Upload Media
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+            {createDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setCreateDropdownOpen(false)}
+                />
+                <div className="absolute right-0 mt-1.5 w-52 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-1 z-50 text-sm">
+                  <button
+                    onClick={() => {
+                      setCreateDropdownOpen(false)
+                      onOpenWizard()
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-muted font-medium flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Opportunity
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateDropdownOpen(false)
+                      onViewChange('universities')
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                  >
+                    Institution / University
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateDropdownOpen(false)
+                      onViewChange('announcements')
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                  >
+                    Announcement
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateDropdownOpen(false)
+                      onViewChange('academic-units')
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                  >
+                    Academic Unit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCreateDropdownOpen(false)
+                      onViewChange('media-library')
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-muted"
+                  >
+                    Upload Media
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Notification Bell */}
         <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all cursor-pointer relative">
@@ -202,7 +207,7 @@ export function AdminTopbar({
               <div className="absolute right-0 mt-2 w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
                 <div className="px-4 py-1.5 border-b border-border mb-1.5">
                   <p className="font-semibold text-foreground truncate">{userEmail}</p>
-                  <p className="text-xs text-muted-foreground">System Administrator</p>
+                  <p className="text-xs text-muted-foreground capitalize">{roleName.replace('_', ' ')}</p>
                 </div>
                 <button
                   onClick={() => {

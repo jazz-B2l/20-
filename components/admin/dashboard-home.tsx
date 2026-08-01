@@ -21,9 +21,11 @@ import { AdminView } from './admin-sidebar'
 interface DashboardHomeProps {
   onViewChange: (view: AdminView) => void
   onOpenWizard: () => void
+  roleName?: string
 }
 
-export function DashboardHome({ onViewChange, onOpenWizard }: DashboardHomeProps) {
+export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' }: DashboardHomeProps) {
+  const isViewer = roleName === 'viewer'
   const supabase = createClient()
   const [stats, setStats] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
@@ -195,15 +197,17 @@ export function DashboardHome({ onViewChange, onOpenWizard }: DashboardHomeProps
           <div className="bg-card border border-border rounded-xl p-6">
             <h3 className="text-base font-bold text-foreground mb-4">Power Workflows</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-              <button
-                onClick={onOpenWizard}
-                className="flex flex-col items-center justify-center p-4 bg-muted hover:bg-primary/5 border border-border hover:border-primary/30 rounded-lg text-center gap-2 cursor-pointer transition-all group"
-              >
-                <div className="p-2 rounded-full bg-primary/10 text-primary group-hover:scale-105 transition-transform">
-                  <Plus className="h-4.5 w-4.5" />
-                </div>
-                <span className="text-xs font-semibold text-foreground">New Opportunity</span>
-              </button>
+              {!isViewer && (
+                <button
+                  onClick={onOpenWizard}
+                  className="flex flex-col items-center justify-center p-4 bg-muted hover:bg-primary/5 border border-border hover:border-primary/30 rounded-lg text-center gap-2 cursor-pointer transition-all group"
+                >
+                  <div className="p-2 rounded-full bg-primary/10 text-primary group-hover:scale-105 transition-transform">
+                    <Plus className="h-4.5 w-4.5" />
+                  </div>
+                  <span className="text-xs font-semibold text-foreground">New Opportunity</span>
+                </button>
+              )}
 
               <button
                 onClick={() => onViewChange('media-library')}
@@ -242,7 +246,7 @@ export function DashboardHome({ onViewChange, onOpenWizard }: DashboardHomeProps
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-foreground">Opportunities Closing Soon</h3>
               <button
-                onClick={() => onViewChange('opportunities')}
+                onClick={() => onViewChange('universities')}
                 className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <span>View all</span>
