@@ -409,16 +409,6 @@ export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
               <Bookmark className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-amber-500' : ''}`} />
             </button>
 
-            {/* Share Icon */}
-            <button
-              type="button"
-              onClick={handleShare}
-              className="p-1.5 rounded-lg bg-secondary/40 border border-border text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-              title="Share"
-            >
-              {copiedShare ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
-            </button>
-
             {/* Separate Expand Button */}
             <button
               type="button"
