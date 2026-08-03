@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { AdminView } from './admin-sidebar'
 
+import { useLanguage } from '@/components/language-context'
+
 interface CommandItem {
   title: string
   subtitle?: string
@@ -40,6 +42,7 @@ export function CommandPalette({
   onViewChange,
   onOpenWizard
 }: CommandPaletteProps) {
+  const { language } = useLanguage()
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -62,11 +65,11 @@ export function CommandPalette({
 
   const sections: CommandSection[] = [
     {
-      heading: 'Quick Actions',
+      heading: language === 'ar' ? 'إجراءات سريعة' : 'Quick Actions',
       items: [
         {
-          title: 'Create Opportunity',
-          subtitle: 'Launch the multi-step opportunity builder wizard',
+          title: language === 'ar' ? 'إنشاء عرض ماجستير' : 'Create Opportunity',
+          subtitle: language === 'ar' ? 'إطلاق معالج إنشاء عروض الماجستير' : 'Launch the multi-step opportunity builder wizard',
           shortcut: ['N'],
           icon: Sparkles,
           action: () => {
@@ -75,8 +78,8 @@ export function CommandPalette({
           }
         },
         {
-          title: 'Create University',
-          subtitle: 'Add a new educational institution to the system',
+          title: language === 'ar' ? 'إضافة جامعة جديدة' : 'Create University',
+          subtitle: language === 'ar' ? 'إضافة مؤسسة تعليم عالي جديدة إلى المنصة' : 'Add a new educational institution to the system',
           icon: School,
           action: () => {
             onClose()
@@ -86,52 +89,25 @@ export function CommandPalette({
       ]
     },
     {
-      heading: 'Navigation',
+      heading: language === 'ar' ? 'التنقل' : 'Navigation',
       items: [
         {
-          title: 'Go to Opportunities',
-          subtitle: 'Manage all degree opportunities and sessions',
-          icon: FileText,
+          title: language === 'ar' ? 'الانتقال إلى الجامعات' : 'Go to Universities',
+          subtitle: language === 'ar' ? 'إدارة مؤسسات التعليم العالي والكليات' : 'Manage educational institutions and faculties',
+          icon: School,
           action: () => {
             onClose()
-            onViewChange('opportunities')
+            onViewChange('universities')
           }
         },
         {
-          title: 'Go to Announcements',
-          subtitle: 'Manage timeline notifications and news updates',
-          icon: Megaphone,
-          action: () => {
-            onClose()
-            onViewChange('announcements')
-          }
-        },
-        {
-          title: 'Open Audit Logs',
-          subtitle: 'View user activity history and system audit records',
-          icon: History,
-          action: () => {
-            onClose()
-            onViewChange('audit-logs')
-          }
-        },
-        {
-          title: 'Open Settings',
-          subtitle: 'Configure site details, languages, backups, and security',
+          title: language === 'ar' ? 'فتح الإعدادات' : 'Open Settings',
+          subtitle: language === 'ar' ? 'تكوين مظهر المنصة واللغات وإعادة ضبط كلمة المرور والفلاتر' : 'Configure site details, languages, backups, and security',
           shortcut: ['Ctrl', 'S'],
           icon: Settings,
           action: () => {
             onClose()
             onViewChange('settings')
-          }
-        },
-        {
-          title: 'View Trash Bin',
-          subtitle: 'Restore deleted opportunities or empty trash',
-          icon: Trash2,
-          action: () => {
-            onClose()
-            onViewChange('trash')
           }
         }
       ]

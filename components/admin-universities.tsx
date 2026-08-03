@@ -47,6 +47,8 @@ import {
   ChevronUp,
   Users
 } from 'lucide-react'
+import { useLanguage } from '@/components/language-context'
+import { translateFacultyName } from '@/lib/faculty-translations'
 
 // Icon mapping helper for domain filters
 function getDomainIcon(nameFr: string) {
@@ -141,6 +143,7 @@ export const WILAYAS = [
 ]
 
 export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) {
+  const { t, language } = useLanguage()
   const isViewer = roleName === 'viewer'
   const supabase = createClient()
   const router = useRouter()
@@ -617,7 +620,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
   if (loading && universities.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-sm text-muted-foreground font-semibold">
-        Loading institutions database...
+        {language === 'ar' ? 'جاري تحميل قاعدة بيانات الجامعات...' : 'Loading institutions database...'}
       </div>
     )
   }
@@ -638,8 +641,8 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 onClick={() => setSelectedUni(null)}
                 className="cursor-pointer font-semibold"
               >
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                Back to Universities
+                <ArrowLeft className="h-4 w-4 mr-1.5 rtl:rotate-180" />
+                {language === 'ar' ? 'الرجوع إلى قائمة الجامعات' : 'Back to Universities'}
               </Button>
               <div className="flex flex-col">
                 <h2 className="text-2xl font-bold text-foreground leading-tight">{selectedUni.name}</h2>
@@ -657,7 +660,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 className="cursor-pointer font-semibold flex items-center gap-1.5"
               >
                 <Trash2 className="h-4 w-4" />
-                Delete University
+                {language === 'ar' ? 'حذف الجامعة' : 'Delete University'}
               </Button>
             )}
           </div>
@@ -666,8 +669,8 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
           <div className="border-b border-border flex items-center justify-between overflow-x-auto select-none">
             <div className="flex items-center gap-1.5">
               {[
-                { id: 'colleges', label: 'Colleges & 20% Master Units', icon: Network },
-                ...(!isViewer ? [{ id: 'settings', label: 'University Settings', icon: Settings }] : [])
+                { id: 'colleges', label: language === 'ar' ? 'الكليات ووحدات ماجستير 20٪' : 'Colleges & 20% Master Units', icon: Network },
+                ...(!isViewer ? [{ id: 'settings', label: language === 'ar' ? 'إعدادات الجامعة' : 'University Settings', icon: Settings }] : [])
               ].map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeSubTab === tab.id
@@ -698,7 +701,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 className="cursor-pointer flex items-center gap-1.5 mb-1"
               >
                 <Plus className="h-4 w-4" />
-                Add College / Faculty
+                {language === 'ar' ? 'إضافة كلية / معهد' : 'Add College / Faculty'}
               </Button>
             )}
           </div>
@@ -730,7 +733,23 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {uniColleges.map((college) => {
-                      const domainName = domains.find(d => d.id === college.domain_id)?.name_fr
+                      const domainObj = domains.find(d => d.id === college.domain_id)
+                      const domainName = language === 'ar' ? (domainObj?.name_ar || domainObj?.name_fr) : (domainObj?.name_fr || domainObj?.name_ar)
+
+                      const getUnitTypeLabel = (type?: string) => {
+                        if (language === 'ar') {
+                          switch (type?.toLowerCase()) {
+                            case 'faculty': return 'كلية'
+                            case 'institute': return 'معهد'
+                            case 'school': return 'مدرسة عليا'
+                            case 'center': return 'مركز'
+                            case 'department': return 'قسم'
+                            default: return 'كلية'
+                          }
+                        }
+                        return type || 'Faculty'
+                      }
+
                       return (
                         <div
                           key={college.id}
@@ -741,15 +760,15 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Badge variant="outline" className="uppercase text-[9px] tracking-wider font-bold">
-                                    {college.unit_type || 'Faculty'}
+                                    {getUnitTypeLabel(college.unit_type)}
                                   </Badge>
                                   {college.is_open === false ? (
                                     <Badge variant="destructive" className="text-[10px] font-semibold">
-                                      Closed
+                                      {language === 'ar' ? 'مغلق' : 'Closed'}
                                     </Badge>
                                   ) : (
                                     <Badge variant="secondary" className="text-[10px] font-semibold bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                                      Open
+                                      {language === 'ar' ? 'مفتوح' : 'Open'}
                                     </Badge>
                                   )}
                                   {domainName && (
@@ -761,24 +780,26 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                                   {college.deadline && (
                                     <Badge variant="secondary" className="text-[10px] font-semibold flex items-center gap-1">
                                       <Calendar className="h-3 w-3" />
-                                      Deadline: {college.deadline}
+                                      {language === 'ar' ? 'آخر موعد:' : 'Deadline:'} {college.deadline}
                                     </Badge>
                                   )}
                                 </div>
-                                <h3 className="text-lg font-bold text-foreground leading-snug">{college.name_fr}</h3>
+                                <h3 className="text-lg font-bold text-foreground leading-snug">
+                                  {translateFacultyName(college.name_fr, language, college.name_ar)}
+                                </h3>
                               </div>
 
                               {!isViewer && (
                                 <div className="flex items-center gap-1">
                                   <button
-                                    title="Edit College"
+                                    title={language === 'ar' ? 'تعديل الكلية' : 'Edit College'}
                                     onClick={() => openEditCollegeModal(college)}
                                     className="p-1.5 hover:bg-muted hover:text-primary rounded-md transition-colors cursor-pointer text-muted-foreground"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </button>
                                   <button
-                                    title="Delete College"
+                                    title={language === 'ar' ? 'حذف الكلية' : 'Delete College'}
                                     onClick={() => openDeleteCollegeModal(college)}
                                     className="p-1.5 hover:bg-muted hover:text-destructive rounded-md transition-colors cursor-pointer text-muted-foreground"
                                   >
@@ -793,7 +814,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               <div className="space-y-1 pt-1">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                   <BookOpen className="h-3 w-3" />
-                                  Offered Master Programs
+                                  {language === 'ar' ? 'برامج الماجستير المتاحة' : 'Offered Master Programs'}
                                 </span>
                                 <p className="text-xs text-foreground bg-muted/30 p-2.5 rounded-lg border border-border/50 leading-relaxed whitespace-pre-wrap">
                                   {college.master_programs}
@@ -806,7 +827,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               <div className="space-y-1">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                   <FileText className="h-3 w-3" />
-                                  Required Documents
+                                  {language === 'ar' ? 'الوثائق المطلوبة' : 'Required Documents'}
                                 </span>
                                 <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                   {college.required_documents}
@@ -825,10 +846,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                                 className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
                               >
                                 <LinkIcon className="h-3.5 w-3.5" />
-                                <span>Application Portal Link →</span>
+                                <span>{language === 'ar' ? 'رابط بوابة التسجيل ←' : 'Application Portal Link →'}</span>
                               </a>
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">No application link added</span>
+                              <span className="text-xs text-muted-foreground italic">
+                                {language === 'ar' ? 'لم يتم إضافة رابط تسجيل' : 'No application link added'}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -841,10 +864,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
 
             {activeSubTab === 'settings' && editFormData && (
               <div className="bg-card border border-border rounded-xl p-6">
-                <h3 className="text-base font-bold text-foreground mb-4">Configure Institution Details</h3>
+                <h3 className="text-base font-bold text-foreground mb-4">
+                  {language === 'ar' ? 'تكوين بيانات وإعدادات الجامعة' : 'Configure Institution Details'}
+                </h3>
                 <form onSubmit={(e) => handleUpdateSubmit(e, selectedUni.id)} className="space-y-4 max-w-xl">
                   <div className="space-y-1.5">
-                    <Label htmlFor="edit_name">University Name</Label>
+                    <Label htmlFor="edit_name">{language === 'ar' ? 'اسم الجامعة' : 'University Name'}</Label>
                     <Input
                       id="edit_name"
                       required
@@ -855,7 +880,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="edit_wilaya">Wilaya</Label>
+                      <Label htmlFor="edit_wilaya">{language === 'ar' ? 'الولاية' : 'Wilaya'}</Label>
                       <select
                         id="edit_wilaya"
                         required
@@ -870,16 +895,16 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                         }}
                         className="w-full bg-card text-foreground border border-border rounded-lg p-2.5 outline-none focus:border-primary font-medium text-sm"
                       >
-                        <option value="">-- Choose Wilaya --</option>
+                        <option value="">{language === 'ar' ? '-- اختر الولاية --' : '-- Choose Wilaya --'}</option>
                         {WILAYAS.map(w => (
                           <option key={w.id} value={w.french}>
-                            {w.id} - {w.french} ({w.arabic})
+                            {w.id} - {language === 'ar' ? w.arabic : w.french}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <Label htmlFor="edit_city">City</Label>
+                      <Label htmlFor="edit_city">{language === 'ar' ? 'المدينة' : 'City'}</Label>
                       <Input
                         id="edit_city"
                         required
@@ -890,7 +915,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="edit_email">Email</Label>
+                    <Label htmlFor="edit_email">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</Label>
                     <Input
                       id="edit_email"
                       type="email"
@@ -899,8 +924,8 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     />
                   </div>
 
-                   <div>
-                    <Label htmlFor="edit_website">Website URL</Label>
+                  <div>
+                    <Label htmlFor="edit_website">{language === 'ar' ? 'رابط الموقع الرسمي' : 'Website URL'}</Label>
                     <Input
                       id="edit_website"
                       type="url"
@@ -911,7 +936,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
 
                   {/* University Logo Settings */}
                   <div className="space-y-3 border border-border p-3.5 rounded-xl bg-secondary/15">
-                    <Label className="font-bold">Logo de l'université</Label>
+                    <Label className="font-bold">{language === 'ar' ? 'شعار الجامعة' : 'University Logo'}</Label>
                     
                     {editFormData.logo && editFormData.logo !== 'placeholder' && (
                       <div className="flex items-center gap-3">
@@ -925,14 +950,16 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                           onClick={() => setEditFormData(prev => ({ ...prev, logo: '' }))}
                           className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
                         >
-                          Supprimer le logo
+                          {language === 'ar' ? 'حذف الشعار' : 'Remove Logo'}
                         </button>
                       </div>
                     )}
                     
                     <div className="space-y-1.5">
                       <Label htmlFor="edit_logo_file" className="text-xs font-semibold text-muted-foreground">
-                        {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
+                        {uploadingLogo
+                          ? (language === 'ar' ? 'جاري رفع الشعار...' : 'Uploading logo...')
+                          : (language === 'ar' ? 'رفع ملف الشعار من جهازك' : 'Upload logo file from PC')}
                       </Label>
                       <Input
                         id="edit_logo_file"
@@ -946,7 +973,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   </div>
 
                   <div>
-                    <Label htmlFor="edit_desc_fr">Description</Label>
+                    <Label htmlFor="edit_desc_fr">{language === 'ar' ? 'الوصف والتفاصيل' : 'Description'}</Label>
                     <Textarea
                       id="edit_desc_fr"
                       rows={4}
@@ -956,7 +983,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="edit_deadline">Application Deadline</Label>
+                    <Label htmlFor="edit_deadline">{language === 'ar' ? 'آخر موعد للتسجيل' : 'Application Deadline'}</Label>
                     <Input
                       id="edit_deadline"
                       type="date"
@@ -965,13 +992,17 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     />
                   </div>
 
-                  <Button type="submit" className="w-full cursor-pointer font-semibold">Save Configurations</Button>
+                  <Button type="submit" className="w-full cursor-pointer font-semibold">
+                    {language === 'ar' ? 'حفظ التكوينات' : 'Save Configurations'}
+                  </Button>
                 </form>
 
                 <div className="border border-destructive/20 bg-destructive/5 rounded-xl p-6 mt-8 max-w-xl">
-                  <h4 className="text-sm font-bold text-destructive">Danger Zone</h4>
+                  <h4 className="text-sm font-bold text-destructive">{language === 'ar' ? 'منطقة الخطر' : 'Danger Zone'}</h4>
                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Permanently delete this university and all of its associated colleges and master units. This action is irreversible.
+                    {language === 'ar'
+                      ? 'حذف هذه الجامعة وكافة الكليات ووحدات الماجستير المرتبطة بها بشكل نهائي. هذا الإجراء لا يمكن التراجع عنه.'
+                      : 'Permanently delete this university and all of its associated colleges and master units. This action is irreversible.'}
                   </p>
                   <Button
                     variant="destructive"
@@ -979,7 +1010,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     onClick={() => openDeleteModal(selectedUni)}
                     className="mt-4 font-semibold cursor-pointer"
                   >
-                    Delete University
+                    {language === 'ar' ? 'حذف الجامعة' : 'Delete University'}
                   </Button>
                 </div>
               </div>
@@ -992,8 +1023,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
           {/* Top Header & Quick Actions */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-2xl font-bold">20% Master Universities</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Manage universities and configure college portals for students.</p>
+              <h2 className="text-2xl font-bold">
+                {language === 'ar' ? 'جامعات ماجستير 20٪' : '20% Master Universities'}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {language === 'ar' ? 'إدارة الجامعات وتكوين بوابات الكليات والمعاهد للطلبة.' : 'Manage universities and configure college portals for students.'}
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -1020,7 +1055,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
               {!isViewer && (
                 <Button onClick={() => setIsAddOpen(true)} className="cursor-pointer flex items-center gap-1.5 font-semibold">
                   <Plus className="h-4 w-4" />
-                  Add University
+                  {language === 'ar' ? 'إضافة جامعة جديدة' : 'Add University'}
                 </Button>
               )}
             </div>
@@ -1033,7 +1068,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search university by name or city..."
+                  placeholder={language === 'ar' ? 'ابحث عن جامعة بالاسم أو المدينة...' : 'Search university by name or city...'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
@@ -1045,10 +1080,10 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                 onChange={e => setSelectedWilayaFilter(e.target.value)}
                 className="bg-muted/40 text-foreground border border-border rounded-xl px-3 py-1.5 outline-none font-semibold text-xs cursor-pointer max-w-[180px]"
               >
-                <option value="">All Wilayas</option>
+                <option value="">{language === 'ar' ? 'جميع الولايات' : 'All Wilayas'}</option>
                 {WILAYAS.map(w => (
                   <option key={w.id} value={w.french}>
-                    {w.id} - {w.french}
+                    {w.id} - {language === 'ar' ? w.arabic : w.french}
                   </option>
                 ))}
               </select>
@@ -1144,7 +1179,9 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                             </button>
                           </>
                         )}
-                        <span className="text-primary font-bold text-[10px] uppercase tracking-wider ml-1">Configure Colleges →</span>
+                        <span className="text-primary font-bold text-[10px] uppercase tracking-wider ml-1">
+                          {language === 'ar' ? 'إدارة الكليات ←' : 'Configure Colleges →'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1157,18 +1194,28 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/20">
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Wilaya</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">City</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Ranking</th>
-                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Actions</th>
+                    <th className="text-left rtl:text-right py-3 px-4 font-semibold text-muted-foreground">
+                      {language === 'ar' ? 'اسم الجامعة' : 'Name'}
+                    </th>
+                    <th className="text-left rtl:text-right py-3 px-4 font-semibold text-muted-foreground">
+                      {language === 'ar' ? 'الولاية' : 'Wilaya'}
+                    </th>
+                    <th className="text-left rtl:text-right py-3 px-4 font-semibold text-muted-foreground">
+                      {language === 'ar' ? 'المدينة' : 'City'}
+                    </th>
+                    <th className="text-left rtl:text-right py-3 px-4 font-semibold text-muted-foreground">
+                      {language === 'ar' ? 'الترتيب' : 'Ranking'}
+                    </th>
+                    <th className="text-right rtl:text-left py-3 px-4 font-semibold text-muted-foreground">
+                      {language === 'ar' ? 'الإجراءات' : 'Actions'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUniversities.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center py-12 text-sm text-muted-foreground font-semibold">
-                        No universities match your search criteria.
+                        {language === 'ar' ? 'لم يتم العثور على أي جامعة تطابق خيارات البحث.' : 'No universities match your search criteria.'}
                       </td>
                     </tr>
                   ) : (
@@ -1188,9 +1235,11 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                         </td>
                         <td className="py-3.5 px-4">{uni.wilaya}</td>
                         <td className="py-3.5 px-4">{uni.city}</td>
-                        <td className="py-3.5 px-4 font-semibold">Rank #{uni.ranking}</td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="py-3.5 px-4 font-semibold">
+                          {language === 'ar' ? `المرتبة #${uni.ranking}` : `Rank #${uni.ranking}`}
+                        </td>
+                        <td className="py-3.5 px-4 text-right rtl:text-left">
+                          <div className="flex items-center justify-end rtl:justify-start gap-1.5">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1200,7 +1249,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               }}
                               className="cursor-pointer font-semibold"
                             >
-                              Configure Colleges
+                              {language === 'ar' ? 'إدارة الكليات' : 'Configure Colleges'}
                             </Button>
                             {!isViewer && (
                               <>
@@ -1242,17 +1291,19 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Add New University</DialogTitle>
-            <DialogDescription>Register a new academic institution into the system.</DialogDescription>
+            <DialogTitle>{language === 'ar' ? 'إضافة جامعة جديدة' : 'Add New University'}</DialogTitle>
+            <DialogDescription>
+              {language === 'ar' ? 'تسجيل مؤسسة تعليم عالي جديدة في المنصة.' : 'Register a new academic institution into the system.'}
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="add_name">University Name</Label>
+              <Label htmlFor="add_name">{language === 'ar' ? 'اسم الجامعة' : 'University Name'}</Label>
               <Input
                 id="add_name"
                 required
-                placeholder="e.g. Université des Sciences et de la Technologie Houari Boumediene"
+                placeholder={language === 'ar' ? 'مثال: جامعة العلوم والتكنولوجيا هواري بومدين' : 'e.g. Université des Sciences et de la Technologie Houari Boumediene'}
                 value={addFormData.name}
                 onChange={(e) => setAddFormData({ ...addFormData, name: e.target.value })}
               />
@@ -1260,7 +1311,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="add_wilaya">Wilaya</Label>
+                <Label htmlFor="add_wilaya">{language === 'ar' ? 'الولاية' : 'Wilaya'}</Label>
                 <select
                   id="add_wilaya"
                   required
@@ -1275,21 +1326,21 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   }}
                   className="w-full bg-card text-foreground border border-border rounded-lg p-2.5 outline-none focus:border-primary font-medium text-sm"
                 >
-                  <option value="">-- Choose Wilaya --</option>
+                  <option value="">{language === 'ar' ? '-- اختر الولاية --' : '-- Choose Wilaya --'}</option>
                   {WILAYAS.map(w => (
                     <option key={w.id} value={w.french}>
-                      {w.id} - {w.french} ({w.arabic})
+                      {w.id} - {language === 'ar' ? w.arabic : w.french}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="add_city">City</Label>
+                <Label htmlFor="add_city">{language === 'ar' ? 'المدينة' : 'City'}</Label>
                 <Input
                   id="add_city"
                   required
-                  placeholder="e.g. Bab Ezzouar"
+                  placeholder={language === 'ar' ? 'مثال: باب الزوار' : 'e.g. Bab Ezzouar'}
                   value={addFormData.city}
                   onChange={(e) => setAddFormData({ ...addFormData, city: e.target.value })}
                 />
@@ -1297,7 +1348,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add_email">Email</Label>
+              <Label htmlFor="add_email">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</Label>
               <Input
                 id="add_email"
                 type="email"
@@ -1308,7 +1359,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add_website">Website URL</Label>
+              <Label htmlFor="add_website">{language === 'ar' ? 'رابط الموقع الرسمي' : 'Website URL'}</Label>
               <Input
                 id="add_website"
                 type="url"
@@ -1319,18 +1370,18 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add_desc_fr">Description (French)</Label>
+              <Label htmlFor="add_desc_fr">{language === 'ar' ? 'الوصف والتفاصيل' : 'Description'}</Label>
               <Textarea
                 id="add_desc_fr"
                 rows={3}
-                placeholder="Provide details about the university campus..."
+                placeholder={language === 'ar' ? 'أدخل تفاصيل عن الجامعة وحرمها الجامعي...' : 'Provide details about the university campus...'}
                 value={addFormData.description_fr}
                 onChange={(e) => setAddFormData({ ...addFormData, description_fr: e.target.value })}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add_deadline">Application Deadline</Label>
+              <Label htmlFor="add_deadline">{language === 'ar' ? 'آخر موعد للتسجيل' : 'Application Deadline'}</Label>
               <Input
                 id="add_deadline"
                 type="date"
@@ -1341,7 +1392,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
 
             {/* University Logo Settings */}
             <div className="space-y-3 border border-border p-3.5 rounded-xl bg-secondary/15">
-              <Label className="font-bold">Logo de l'université</Label>
+              <Label className="font-bold">{language === 'ar' ? 'شعار الجامعة' : 'University Logo'}</Label>
               
               {addFormData.logo && addFormData.logo !== 'placeholder' && (
                 <div className="flex items-center gap-3">
@@ -1355,14 +1406,16 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     onClick={() => setAddFormData(prev => ({ ...prev, logo: '' }))}
                     className="text-xs font-bold text-destructive hover:bg-destructive/5 py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
                   >
-                    Supprimer le logo
+                    {language === 'ar' ? 'حذف الشعار' : 'Remove Logo'}
                   </button>
                 </div>
               )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="add_logo_file" className="text-xs font-semibold text-muted-foreground">
-                  {uploadingLogo ? 'Téléversement en cours...' : 'Téléverser le fichier du logo depuis votre PC'}
+                  {uploadingLogo
+                    ? (language === 'ar' ? 'جاري رفع الشعار...' : 'Uploading logo...')
+                    : (language === 'ar' ? 'رفع ملف الشعار من جهازك' : 'Upload logo file from PC')}
                 </Label>
                 <Input
                   id="add_logo_file"
@@ -1376,8 +1429,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-              <Button type="submit" className="cursor-pointer font-semibold">Add University</Button>
+              <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
+                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+              </Button>
+              <Button type="submit" className="cursor-pointer font-semibold">
+                {language === 'ar' ? 'إضافة الجامعة' : 'Add University'}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -1625,7 +1682,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             <div className="space-y-1.5 relative" ref={addDomainRef}>
               <Label className="flex items-center gap-1.5 font-semibold">
                 <BookOpen className="h-3.5 w-3.5 text-primary" />
-                <span>Domaine d'études</span>
+                <span>{language === 'ar' ? 'المجال الدراسي' : 'Study Domain'}</span>
               </Label>
               
               <button
@@ -1639,7 +1696,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return (
                         <>
                           <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">-- Choisir un domaine --</span>
+                          <span className="truncate">{language === 'ar' ? '-- اختر المجال الدراسي --' : '-- Choose Domain --'}</span>
                         </>
                       )
                     }
@@ -1648,15 +1705,16 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return (
                         <>
                           <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">-- Choisir un domaine --</span>
+                          <span className="truncate">{language === 'ar' ? '-- اختر المجال الدراسي --' : '-- Choose Domain --'}</span>
                         </>
                       )
                     }
                     const IconComp = getDomainIcon(activeDom.name_fr)
+                    const activeName = language === 'ar' ? (activeDom.name_ar || activeDom.name_fr) : activeDom.name_fr
                     return (
                       <>
                         <IconComp className="h-4 w-4 text-primary shrink-0" />
-                        <span className="truncate">{activeDom.name_fr}</span>
+                        <span className="truncate">{activeName}</span>
                       </>
                     )
                   })()}
@@ -1672,7 +1730,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
                     <input
                       type="text"
-                      placeholder="Rechercher un domaine..."
+                      placeholder={language === 'ar' ? 'ابحث عن مجال دراسي...' : 'Search study domain...'}
                       value={addDomainSearch}
                       onChange={(e) => setAddDomainSearch(e.target.value)}
                       className="w-full bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground py-1 font-medium"
@@ -1684,13 +1742,14 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     {/* Filtered domains */}
                     {(() => {
                       const filtered = domains.filter(dom => 
-                        dom.name_fr.toLowerCase().includes(addDomainSearch.toLowerCase())
+                        dom.name_fr.toLowerCase().includes(addDomainSearch.toLowerCase()) ||
+                        (dom.name_ar && dom.name_ar.includes(addDomainSearch))
                       )
 
                       if (filtered.length === 0) {
                         return (
                           <div className="px-4 py-4 text-center text-xs text-muted-foreground italic">
-                            Aucun domaine trouvé
+                            {language === 'ar' ? 'لم يتم العثور على أي مجال' : 'No domain found'}
                           </div>
                         )
                       }
@@ -1698,6 +1757,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return filtered.map(dom => {
                         const IconComp = getDomainIcon(dom.name_fr)
                         const isSelected = collegeFormData.domain_id === dom.id
+                        const domLabel = language === 'ar' ? (dom.name_ar || dom.name_fr) : dom.name_fr
                         return (
                           <button
                             key={dom.id}
@@ -1707,13 +1767,13 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               setIsAddDomainOpen(false)
                               setAddDomainSearch('')
                             }}
-                            className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                            className={`w-full text-left rtl:text-right px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
                               isSelected ? 'text-primary bg-primary/5 font-semibold' : 'text-foreground'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 truncate">
                               <IconComp className="h-4 w-4 text-primary shrink-0" />
-                              <span className="truncate">{dom.name_fr}</span>
+                              <span className="truncate">{domLabel}</span>
                             </div>
                             {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                           </button>
@@ -1729,10 +1789,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             <div className="space-y-2.5 p-3.5 bg-secondary/10 dark:bg-secondary/5 border border-border rounded-xl">
               <div>
                 <Label className="font-bold text-sm select-none">
-                  Statut de l'offre / Inscriptions
+                  {language === 'ar' ? 'حالة التسجيل في العرض' : 'Offer Registration Status'}
                 </Label>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                  Activer pour garder l'offre ouverte. Désactiver pour forcer la fermeture de l'offre (Inscriptions closes) même si la date limite n'est pas encore dépassée.
+                  {language === 'ar'
+                    ? 'تفعيل لإبقاء العرض مفتوحاً للتسجيل. تعطيل لإغلاق العرض (التسجيلات مغلقة) حتى لو لم ينقض الموعد.'
+                    : 'Enable to keep the offer open. Disable to force closing applications even if deadline has not passed.'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2.5 pt-0.5">
@@ -1746,7 +1808,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
-                  Ouvert / Actif
+                  {language === 'ar' ? 'مفتوح / مفعّل' : 'Open / Active'}
                 </button>
                 <button
                   type="button"
@@ -1758,7 +1820,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open === false ? 'bg-destructive' : 'bg-muted-foreground/40'}`} />
-                  Fermé / Clos
+                  {language === 'ar' ? 'مغلق' : 'Closed'}
                 </button>
               </div>
             </div>
@@ -1856,7 +1918,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             <div className="space-y-1.5 relative" ref={editDomainRef}>
               <Label className="flex items-center gap-1.5 font-semibold">
                 <BookOpen className="h-3.5 w-3.5 text-primary" />
-                <span>Domaine d'études</span>
+                <span>{language === 'ar' ? 'المجال الدراسي' : 'Study Domain'}</span>
               </Label>
               
               <button
@@ -1870,7 +1932,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return (
                         <>
                           <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">-- Choisir un domaine --</span>
+                          <span className="truncate">{language === 'ar' ? '-- اختر المجال الدراسي --' : '-- Choose Domain --'}</span>
                         </>
                       )
                     }
@@ -1879,15 +1941,16 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return (
                         <>
                           <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                          <span className="truncate">-- Choisir un domaine --</span>
+                          <span className="truncate">{language === 'ar' ? '-- اختر المجال الدراسي --' : '-- Choose Domain --'}</span>
                         </>
                       )
                     }
                     const IconComp = getDomainIcon(activeDom.name_fr)
+                    const activeName = language === 'ar' ? (activeDom.name_ar || activeDom.name_fr) : activeDom.name_fr
                     return (
                       <>
                         <IconComp className="h-4 w-4 text-primary shrink-0" />
-                        <span className="truncate">{activeDom.name_fr}</span>
+                        <span className="truncate">{activeName}</span>
                       </>
                     )
                   })()}
@@ -1903,7 +1966,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
                     <input
                       type="text"
-                      placeholder="Rechercher un domaine..."
+                      placeholder={language === 'ar' ? 'ابحث عن مجال دراسي...' : 'Search study domain...'}
                       value={editDomainSearch}
                       onChange={(e) => setEditDomainSearch(e.target.value)}
                       className="w-full bg-transparent border-0 outline-none text-xs text-foreground placeholder:text-muted-foreground py-1 font-medium"
@@ -1915,13 +1978,14 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                     {/* Filtered domains */}
                     {(() => {
                       const filtered = domains.filter(dom => 
-                        dom.name_fr.toLowerCase().includes(editDomainSearch.toLowerCase())
+                        dom.name_fr.toLowerCase().includes(editDomainSearch.toLowerCase()) ||
+                        (dom.name_ar && dom.name_ar.includes(editDomainSearch))
                       )
 
                       if (filtered.length === 0) {
                         return (
                           <div className="px-4 py-4 text-center text-xs text-muted-foreground italic">
-                            Aucun domaine trouvé
+                            {language === 'ar' ? 'لم يتم العثور على أي مجال' : 'No domain found'}
                           </div>
                         )
                       }
@@ -1929,6 +1993,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                       return filtered.map(dom => {
                         const IconComp = getDomainIcon(dom.name_fr)
                         const isSelected = collegeFormData.domain_id === dom.id
+                        const domLabel = language === 'ar' ? (dom.name_ar || dom.name_fr) : dom.name_fr
                         return (
                           <button
                             key={dom.id}
@@ -1938,13 +2003,13 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                               setIsEditDomainOpen(false)
                               setEditDomainSearch('')
                             }}
-                            className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
+                            className={`w-full text-left rtl:text-right px-3 py-2 text-xs flex items-center justify-between transition-colors hover:bg-secondary/40 cursor-pointer ${
                               isSelected ? 'text-primary bg-primary/5 font-semibold' : 'text-foreground'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 truncate">
                               <IconComp className="h-4 w-4 text-primary shrink-0" />
-                              <span className="truncate">{dom.name_fr}</span>
+                              <span className="truncate">{domLabel}</span>
                             </div>
                             {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                           </button>
@@ -1960,10 +2025,12 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
             <div className="space-y-2.5 p-3.5 bg-secondary/10 dark:bg-secondary/5 border border-border rounded-xl">
               <div>
                 <Label className="font-bold text-sm select-none">
-                  Statut de l'offre / Inscriptions
+                  {language === 'ar' ? 'حالة التسجيل في العرض' : 'Offer Registration Status'}
                 </Label>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                  Activer pour garder l'offre ouverte. Désactiver pour forcer la fermeture de l'offre (Inscriptions closes) même si la date limite n'est pas encore dépassée.
+                  {language === 'ar'
+                    ? 'تفعيل لإبقاء العرض مفتوحاً للتسجيل. تعطيل لإغلاق العرض (التسجيلات مغلقة) حتى لو لم ينقض الموعد.'
+                    : 'Enable to keep the offer open. Disable to force closing applications even if deadline has not passed.'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2.5 pt-0.5">
@@ -1977,7 +2044,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'}`} />
-                  Ouvert / Actif
+                  {language === 'ar' ? 'مفتوح / مفعّل' : 'Open / Active'}
                 </button>
                 <button
                   type="button"
@@ -1989,7 +2056,7 @@ export function UniversitiesTab({ roleName = 'viewer' }: { roleName?: string }) 
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${collegeFormData.is_open === false ? 'bg-destructive' : 'bg-muted-foreground/40'}`} />
-                  Fermé / Clos
+                  {language === 'ar' ? 'مغلق' : 'Closed'}
                 </button>
               </div>
             </div>
