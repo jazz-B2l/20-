@@ -1,11 +1,13 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/components/language-context'
 import {
   LayoutDashboard,
   School,
   GitPullRequest,
   Users,
+  Settings,
   ChevronLeft,
   ChevronRight,
   X
@@ -17,6 +19,7 @@ export type AdminView =
   | 'universities'
   | 'suggested-updates'
   | 'team'
+  | 'settings'
 
 interface SidebarItem {
   id: AdminView
@@ -48,35 +51,39 @@ export function AdminSidebar({
   isMobileOpen = false,
   onMobileClose
 }: AdminSidebarProps) {
+  const { t, language } = useLanguage()
+
   const sections: SidebarSection[] = [
     {
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }
+        { id: 'dashboard', label: t('admin.dashboard'), icon: LayoutDashboard }
       ]
     },
     {
-      title: '20% Master Units',
+      title: t('admin.master_units'),
       items: [
-        { id: 'universities', label: 'Universities & Colleges', icon: School }
+        { id: 'universities', label: t('admin.universities'), icon: School }
       ]
     },
     {
-      title: 'Community',
+      title: t('admin.community'),
       items: [
-        { id: 'suggested-updates', label: 'Suggested Updates', icon: GitPullRequest }
+        { id: 'suggested-updates', label: t('admin.suggested_updates'), icon: GitPullRequest }
       ]
     }
   ]
 
   const canAccessTeam = roleName === 'super_admin' || roleName === 'owner'
+  const adminItems: SidebarItem[] = []
   if (canAccessTeam) {
-    sections.push({
-      title: 'Administration',
-      items: [
-        { id: 'team', label: 'Team & Access', icon: Users }
-      ]
-    })
+    adminItems.push({ id: 'team', label: t('admin.team'), icon: Users })
   }
+  adminItems.push({ id: 'settings', label: t('admin.settings'), icon: Settings })
+
+  sections.push({
+    title: t('admin.administration'),
+    items: adminItems
+  })
 
   const sidebarContent = (
     <div className="flex flex-col h-full select-none">
@@ -92,7 +99,9 @@ export function AdminSidebar({
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-foreground leading-tight truncate">20% CMS</span>
-              <span className="text-[10px] text-muted-foreground font-mono leading-none truncate">20% Master Portal</span>
+              <span className="text-[10px] text-muted-foreground font-mono leading-none truncate">
+                {language === 'ar' ? 'بوابة الماجستير 20٪' : '20% Master Portal'}
+              </span>
             </div>
           )}
         </div>

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminView } from './admin-sidebar'
+import { useLanguage } from '@/components/language-context'
 
 interface AdminTopbarProps {
   currentView: AdminView
@@ -35,46 +36,44 @@ export function AdminTopbar({
   onOpenWizard,
   onToggleMobileMenu
 }: AdminTopbarProps) {
+  const { t, language } = useLanguage()
   const isViewer = roleName === 'viewer'
   const [profileOpen, setProfileOpen] = useState(false)
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false)
 
   const getBreadcrumbs = (view: AdminView): string[] => {
+    if (language === 'ar') {
+      switch (view) {
+        case 'dashboard':
+          return ['لوحة التحكم']
+        case 'opportunities':
+          return ['المحتوى', 'عروض الماجستير']
+        case 'universities':
+          return ['الشؤون الأكاديمية', 'الجامعات والكليات']
+        case 'suggested-updates':
+          return ['الإشراف', 'الاقتراحات والتصحيحات']
+        case 'team':
+          return ['الإدارة', 'الفريق والصلاحيات']
+        case 'settings':
+          return ['النظام', 'الإعدادات']
+        default:
+          return ['لوحة التحكم']
+      }
+    }
+
     switch (view) {
       case 'dashboard':
         return ['Dashboard']
       case 'opportunities':
         return ['Content', 'Opportunities']
-      case 'announcements':
-        return ['Content', 'Announcements']
       case 'universities':
         return ['Academic', 'Universities']
-      case 'academic-units':
-        return ['Academic', 'Academic Units']
-      case 'domains':
-        return ['Academic', 'Domains']
-      case 'sessions':
-        return ['Admissions', 'Sessions']
-      case 'events':
-        return ['Admissions', 'Events']
-      case 'required-documents':
-        return ['Admissions', 'Required Documents']
-      case 'media-library':
-        return ['Assets', 'Media Library']
-      case 'sources':
-        return ['Assets', 'Sources']
       case 'suggested-updates':
         return ['Moderation', 'Suggested Updates']
-      case 'users':
-        return ['Moderation', 'Users']
-      case 'roles':
-        return ['Moderation', 'Roles & Access']
-      case 'audit-logs':
-        return ['Moderation', 'Audit Logs']
+      case 'team':
+        return ['Administration', 'Team & Access']
       case 'settings':
         return ['System', 'Settings']
-      case 'trash':
-        return ['System', 'Trash Bin']
       default:
         return ['CMS']
     }
@@ -97,7 +96,7 @@ export function AdminTopbar({
         <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground font-medium truncate">
           {breadcrumbs.map((crumb, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
-              {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />}
+              {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 rtl:rotate-180" />}
               <span className={idx === breadcrumbs.length - 1 ? 'text-foreground font-semibold truncate' : 'truncate'}>
                 {crumb}
               </span>
@@ -114,7 +113,7 @@ export function AdminTopbar({
           className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground bg-muted hover:bg-muted/80 border border-border rounded-md transition-colors cursor-pointer w-28 sm:w-44 text-left truncate"
         >
           <Search className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Search...</span>
+          <span className="truncate">{t('admin.search')}</span>
           <kbd className="ml-auto pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-card px-1.5 font-mono text-[9px] font-medium opacity-100">
             <span className="text-[10px]">Ctrl</span>K
           </kbd>
@@ -129,7 +128,7 @@ export function AdminTopbar({
               className="flex items-center gap-1.5 cursor-pointer bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm"
             >
               <Plus className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Create</span>
+              <span className="hidden sm:inline">{t('admin.create')}</span>
             </Button>
 
             {createDropdownOpen && (
@@ -138,52 +137,25 @@ export function AdminTopbar({
                   className="fixed inset-0 z-40"
                   onClick={() => setCreateDropdownOpen(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-52 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-1 z-50 text-sm">
+                <div className="absolute right-0 rtl:left-0 rtl:right-auto mt-1.5 w-52 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-1 z-50 text-sm">
                   <button
                     onClick={() => {
                       setCreateDropdownOpen(false)
                       onOpenWizard()
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted font-medium flex items-center gap-2 cursor-pointer"
+                    className="w-full text-left rtl:text-right px-4 py-2 hover:bg-muted font-medium flex items-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                    Opportunity
+                    <span>{t('admin.create_opportunity')}</span>
                   </button>
                   <button
                     onClick={() => {
                       setCreateDropdownOpen(false)
                       onViewChange('universities')
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
+                    className="w-full text-left rtl:text-right px-4 py-2 hover:bg-muted cursor-pointer"
                   >
-                    Institution / University
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCreateDropdownOpen(false)
-                      onViewChange('announcements')
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    Announcement
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCreateDropdownOpen(false)
-                      onViewChange('academic-units')
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    Academic Unit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCreateDropdownOpen(false)
-                      onViewChange('media-library')
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    Upload Media
+                    <span>{t('admin.universities')}</span>
                   </button>
                 </div>
               </>
@@ -212,30 +184,39 @@ export function AdminTopbar({
                 className="fixed inset-0 z-40"
                 onClick={() => setProfileOpen(false)}
               />
-              <div className="absolute right-0 mt-2 w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
-                <div className="px-4 py-1.5 border-b border-border mb-1.5">
+              <div className="absolute right-0 rtl:left-0 rtl:right-auto mt-2 w-64 bg-popover text-popover-foreground border border-border rounded-md shadow-lg py-2.5 z-50 text-sm">
+                <div className="px-4 py-1.5 border-b border-border mb-1.5 text-left rtl:text-right">
                   <p className="font-semibold text-foreground truncate">{userEmail}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{roleName.replace('_', ' ')}</p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {language === 'ar' ? (
+                      roleName === 'owner' ? 'المالك الرئيسي' :
+                      roleName === 'super_admin' ? 'مشرف عام' :
+                      roleName === 'admin' ? 'مدير محتوى' :
+                      roleName === 'viewer' ? 'زائر / مستعرض' : roleName
+                    ) : (
+                      roleName.replace('_', ' ')
+                    )}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
                     setProfileOpen(false)
                     onViewChange('settings')
                   }}
-                  className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left rtl:text-right px-4 py-2 hover:bg-muted flex items-center gap-2 cursor-pointer"
                 >
-                  <User className="h-4 w-4" />
-                  My Settings
+                  <User className="h-4 w-4 shrink-0" />
+                  <span>{t('admin.my_settings')}</span>
                 </button>
                 <button
                   onClick={() => {
                     setProfileOpen(false)
                     onLogout()
                   }}
-                  className="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/5 flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left rtl:text-right px-4 py-2 text-destructive hover:bg-destructive/5 flex items-center gap-2 cursor-pointer"
                 >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  <span>{t('admin.sign_out')}</span>
                 </button>
               </div>
             </>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/components/language-context'
 import {
   Sparkles,
   School,
@@ -13,7 +14,9 @@ import {
   ArrowRight,
   Plus,
   ArrowUpRight,
-  Loader2
+  Loader2,
+  Construction,
+  Wrench
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminView } from './admin-sidebar'
@@ -25,12 +28,14 @@ interface DashboardHomeProps {
 }
 
 export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' }: DashboardHomeProps) {
+  const { t, language } = useLanguage()
   const isViewer = roleName === 'viewer'
   const supabase = createClient()
-  const [stats, setStats] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
-  const [closingSoon, setClosingSoon] = useState<any[]>([])
-  const [suggestions, setSuggestions] = useState<any[]>([])
+  
+  const [counts, setCounts] = useState({ open: 0, draft: 0, pending: 0, univ: 0 })
+  const [rawLogs, setRawLogs] = useState<any[]>([])
+  const [rawCloseEvents, setRawCloseEvents] = useState<any[]>([])
+  const [rawSuggestions, setRawSuggestions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,12 +63,21 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           .from('universities')
           .select('*', { count: 'exact', head: true })
 
+        setCounts({
+          open: openCount || 0,
+          draft: draftCount || 0,
+          pending: pendingCount || 0,
+          univ: univCount || 0
+        })
+
         // 2. Fetch recent activity from audit logs
         const { data: logs } = await supabase
           .from('audit_logs')
           .select('*')
           .order('timestamp', { ascending: false })
           .limit(4)
+
+        if (logs) setRawLogs(logs)
 
         // 3. Fetch events closing soon
         const { data: closeEvents } = await supabase
@@ -84,6 +98,8 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           .order('event_date', { ascending: true })
           .limit(3)
 
+        if (closeEvents) setRawCloseEvents(closeEvents)
+
         // 4. Fetch latest suggestions from sources
         const { data: suggestionsData } = await supabase
           .from('sources')
@@ -99,44 +115,7 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           .order('created_at', { ascending: false })
           .limit(3)
 
-        // Set state
-        setStats([
-          { title: 'Open Opportunities', value: String(openCount || 0), change: 'Published to public portal', icon: Sparkles, color: 'text-emerald-500 bg-emerald-500/10' },
-          { title: 'Draft Opportunities', value: String(draftCount || 0), change: 'In review or preparation', icon: Layers, color: 'text-amber-500 bg-amber-500/10' },
-          { title: 'Pending Reviews', value: String(pendingCount || 0), change: 'Community corrections in queue', icon: FileCheck, color: 'text-blue-500 bg-blue-500/10' },
-          { title: 'Total Institutions', value: String(univCount || 0), change: 'Registered universities', icon: School, color: 'text-indigo-500 bg-indigo-500/10' }
-        ])
-
-        setActivities((logs || []).map(log => {
-          return {
-            user: log.user_id ? `User ${log.user_id.slice(0, 8)}` : 'System Agent',
-            action: `${log.action}d record in`,
-            target: `${log.table_name}`,
-            time: new Date(log.timestamp).toLocaleTimeString()
-          }
-        }))
-
-        setClosingSoon((closeEvents || []).map((ev: any) => {
-          const opp = ev.session?.opportunity || {}
-          const univ = opp.university || {}
-          const diffMs = new Date(ev.event_date).getTime() - Date.now()
-          const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
-          return {
-            title: opp.title_fr || 'Master Program',
-            university: univ.name_fr || 'Unknown University',
-            daysLeft: days,
-            date: new Date(ev.event_date).toLocaleDateString()
-          }
-        }))
-
-        setSuggestions((suggestionsData || []).map((s: any) => {
-          return {
-            field: s.opportunity?.title_fr || 'Correction Suggestion',
-            newVal: s.message || 'Suggested changes details.',
-            author: s.url || 'Guest Contributor',
-            time: new Date(s.created_at).toLocaleTimeString()
-          }
-        }))
+        if (suggestionsData) setRawSuggestions(suggestionsData)
       } catch (e) {
         console.error('Error fetching dashboard data:', e)
       } finally {
@@ -145,13 +124,74 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
     }
 
     loadDashboardData()
-  }, [])
+  }, []) // Empty dependency array ensures constant hook signature across renders
+
+  // Derive stats dynamically based on current language
+  const stats = [
+    {
+      title: language === 'ar' ? 'عروض الماجستير المفتوحة' : 'Open Opportunities',
+      value: String(counts.open),
+      change: language === 'ar' ? 'منشورة في البوابة العمومية' : 'Published to public portal',
+      icon: Sparkles,
+      color: 'text-emerald-500 bg-emerald-500/10'
+    },
+    {
+      title: language === 'ar' ? 'عروض الماجستير (مسودات)' : 'Draft Opportunities',
+      value: String(counts.draft),
+      change: language === 'ar' ? 'قيد التحضير أو المراجعة' : 'In review or preparation',
+      icon: Layers,
+      color: 'text-amber-500 bg-amber-500/10'
+    },
+    {
+      title: language === 'ar' ? 'اقتراحات في الانتظار' : 'Pending Reviews',
+      value: String(counts.pending),
+      change: language === 'ar' ? 'تعديلات المجتمع في الانتظار' : 'Community corrections in queue',
+      icon: FileCheck,
+      color: 'text-blue-500 bg-blue-500/10'
+    },
+    {
+      title: language === 'ar' ? 'إجمالي الجامعات والمعاهد' : 'Total Institutions',
+      value: String(counts.univ),
+      change: language === 'ar' ? 'مؤسسات التعليم العالي المسجلة' : 'Registered universities',
+      icon: School,
+      color: 'text-indigo-500 bg-indigo-500/10'
+    }
+  ]
+
+  const activities = rawLogs.map(log => ({
+    user: log.user_id ? `${language === 'ar' ? 'المستخدم' : 'User'} ${log.user_id.slice(0, 8)}` : (language === 'ar' ? 'وكيل النظام' : 'System Agent'),
+    action: language === 'ar' ? 'قام بتعديل سجل في' : `${log.action}d record in`,
+    target: `${log.table_name}`,
+    time: new Date(log.timestamp).toLocaleTimeString()
+  }))
+
+  const closingSoon = rawCloseEvents.map((ev: any) => {
+    const opp = ev.session?.opportunity || {}
+    const univ = opp.university || {}
+    const diffMs = new Date(ev.event_date).getTime() - Date.now()
+    const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+    return {
+      title: opp.title_fr || (language === 'ar' ? 'برنامج ماجستير' : 'Master Program'),
+      university: univ.name_fr || (language === 'ar' ? 'جامعة مجهولة' : 'Unknown University'),
+      daysLeft: days,
+      date: new Date(ev.event_date).toLocaleDateString()
+    }
+  })
+
+  const suggestions = rawSuggestions.map((s: any) => ({
+    field: s.opportunity?.title_fr || (language === 'ar' ? 'اقتراح تصحيح' : 'Correction Suggestion'),
+    newVal: s.message || (language === 'ar' ? 'تفاصيل التعديل المقترح.' : 'Suggested changes details.'),
+    author: s.url || (language === 'ar' ? 'مساهم زائر' : 'Guest Contributor'),
+    time: new Date(s.created_at).toLocaleTimeString()
+  }))
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <Loader2 className="animate-spin h-8 w-8 text-primary" />
-        <span className="ml-3 text-sm text-muted-foreground">Loading dashboard overview...</span>
+        <span className="ml-3 text-sm font-semibold text-muted-foreground">
+          {language === 'ar' ? 'جاري تحميل لوحة التحكم...' : 'Loading dashboard overview...'}
+        </span>
       </div>
     )
   }
@@ -160,8 +200,52 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
     <div className="space-y-8 select-none animate-in fade-in duration-200">
       {/* Page Title Header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Overview Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Here is a quick look at your academic network operations status today.</p>
+        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
+          {language === 'ar' ? 'نظرة عامة على لوحة التحكم' : 'Overview Dashboard'}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {language === 'ar' ? 'ملخص سريع لعمليات المنصة وشبكة الجامعات اليوم.' : 'Here is a quick look at your academic network operations status today.'}
+        </p>
+      </div>
+
+      {/* Transparent Work In Progress Banner Window */}
+      <div className="relative overflow-hidden rounded-2xl bg-card/60 backdrop-blur-md border border-amber-500/30 p-6 shadow-xl transition-all">
+        {/* Glow effect background element */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl shrink-0">
+              <Construction className="h-6 w-6 animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                  {language === 'ar' ? 'قيد العمل والتطوير' : 'Work in Progress'}
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground">• Admin V2</span>
+              </div>
+              <h2 className="text-lg font-bold text-foreground">
+                {language === 'ar' ? 'صفحة لوحة التحكم تحت التطوير والتحسين' : 'Dashboard Overview Under Active Construction'}
+              </h2>
+              <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+                {language === 'ar'
+                  ? 'هذه الصفحة قيد العمل والتحسين حالياً لإضافة المزيد من الإحصائيات المباشرة والرسوم البيانية المتقدمة. يمكن إكمال بقية العمليات والمهام عبر الإعدادات والصفحات المتاحة في القائمة الجانبية.'
+                  : 'This overview dashboard is currently work in progress to introduce deeper analytics, live activity streams, and enhanced control modules. You can manage settings, study domains, and filters from the sidebar menu.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onViewChange('settings')}
+              className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all flex items-center gap-1.5"
+            >
+              <Wrench className="h-4 w-4" />
+              <span>{language === 'ar' ? 'الانتقال إلى الإعدادات' : 'Go to Settings'}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Grid of Stats Cards */}
@@ -195,7 +279,9 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           
           {/* Quick Actions Panel */}
           <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="text-base font-bold text-foreground mb-4">Power Workflows</h3>
+            <h3 className="text-base font-bold text-foreground mb-4">
+              {language === 'ar' ? 'إجراءات ومسارات سريعة' : 'Power Workflows'}
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               {!isViewer && (
                 <button
@@ -205,7 +291,9 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
                   <div className="p-2 rounded-full bg-primary/10 text-primary group-hover:scale-105 transition-transform">
                     <Plus className="h-4.5 w-4.5" />
                   </div>
-                  <span className="text-xs font-semibold text-foreground">New Opportunity</span>
+                  <span className="text-xs font-semibold text-foreground">
+                    {language === 'ar' ? 'عرض ماجستير جديد' : 'New Opportunity'}
+                  </span>
                 </button>
               )}
 
@@ -216,7 +304,9 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
                 <div className="p-2 rounded-full bg-indigo-500/10 text-indigo-500 group-hover:scale-105 transition-transform">
                   <ArrowUpRight className="h-4.5 w-4.5" />
                 </div>
-                <span className="text-xs font-semibold text-foreground">Upload Media</span>
+                <span className="text-xs font-semibold text-foreground">
+                  {language === 'ar' ? 'رفع وسائط' : 'Upload Media'}
+                </span>
               </button>
 
               <button
@@ -226,7 +316,9 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
                 <div className="p-2 rounded-full bg-blue-500/10 text-blue-500 group-hover:scale-105 transition-transform">
                   <FileCheck className="h-4.5 w-4.5" />
                 </div>
-                <span className="text-xs font-semibold text-foreground">Review Suggestions</span>
+                <span className="text-xs font-semibold text-foreground">
+                  {language === 'ar' ? 'مراجعة الاقتراحات' : 'Review Suggestions'}
+                </span>
               </button>
 
               <button
@@ -236,7 +328,9 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
                 <div className="p-2 rounded-full bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform">
                   <Activity className="h-4.5 w-4.5" />
                 </div>
-                <span className="text-xs font-semibold text-foreground">System Health</span>
+                <span className="text-xs font-semibold text-foreground">
+                  {language === 'ar' ? 'حالة النظام والإعدادات' : 'System Health'}
+                </span>
               </button>
             </div>
           </div>
@@ -244,25 +338,31 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           {/* Opportunities Closing Soon */}
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-foreground">Opportunities Closing Soon</h3>
+              <h3 className="text-base font-bold text-foreground">
+                {language === 'ar' ? 'عروض تقترب آجال التسجيل فيها' : 'Opportunities Closing Soon'}
+              </h3>
               <button
                 onClick={() => onViewChange('universities')}
                 className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
               >
-                <span>View all</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <span>{language === 'ar' ? 'عرض الكل' : 'View all'}</span>
+                <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
               </button>
             </div>
             
             <div className="divide-y divide-border">
               {closingSoon.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">No upcoming deadlines registered.</p>
+                <p className="text-xs text-muted-foreground py-4 text-center">
+                  {language === 'ar' ? 'لا توجد مواعيد تسجيل قادمة مسجلة حالياً.' : 'No upcoming deadlines registered.'}
+                </p>
               ) : (
                 closingSoon.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                     <div>
                       <h4 className="text-sm font-semibold text-foreground">{item.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.university} • Closes {item.date}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.university} • {language === 'ar' ? 'ينتهي في' : 'Closes'} {item.date}
+                      </p>
                     </div>
                     <div className="text-right shrink-0">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
@@ -270,7 +370,7 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
                           ? 'bg-destructive/10 text-destructive'
                           : 'bg-amber-500/10 text-amber-600'
                       }`}>
-                        {item.daysLeft} days left
+                        {item.daysLeft} {language === 'ar' ? 'أيام متبقية' : 'days left'}
                       </span>
                     </div>
                   </div>
@@ -286,9 +386,13 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           
           {/* Recent Activity timeline */}
           <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="text-base font-bold text-foreground mb-4">Recent activity</h3>
+            <h3 className="text-base font-bold text-foreground mb-4">
+              {language === 'ar' ? 'النشاط الأخير والعمليات' : 'Recent activity'}
+            </h3>
             {activities.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No activity records logged.</p>
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                {language === 'ar' ? 'لا يوجد سجل عمليات مسجل.' : 'No activity records logged.'}
+              </p>
             ) : (
               <div className="relative border-l border-border pl-4 space-y-5 py-2">
                 {activities.map((item, idx) => (
@@ -312,18 +416,22 @@ export function DashboardHome({ onViewChange, onOpenWizard, roleName = 'viewer' 
           {/* Pending Suggestions */}
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-foreground">Latest Suggestions</h3>
+              <h3 className="text-base font-bold text-foreground">
+                {language === 'ar' ? 'أحدث اقتراحات المجتمع' : 'Latest Suggestions'}
+              </h3>
               <button
                 onClick={() => onViewChange('suggested-updates')}
                 className="text-xs text-primary hover:underline font-semibold cursor-pointer"
               >
-                Moderate
+                {language === 'ar' ? 'إدارة ومراجعة' : 'Moderate'}
               </button>
             </div>
             
             <div className="space-y-3">
               {suggestions.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-4 text-center">No suggestions in queue.</p>
+                <p className="text-xs text-muted-foreground py-4 text-center">
+                  {language === 'ar' ? 'لا توجد اقتراحات في الانتظار.' : 'No suggestions in queue.'}
+                </p>
               ) : (
                 suggestions.map((item, idx) => (
                   <div key={idx} className="p-3 bg-muted/40 border border-border rounded-lg text-xs leading-normal">
