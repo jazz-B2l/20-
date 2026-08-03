@@ -1,3 +1,4 @@
+import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Poppins, Changa } from 'next/font/google'
@@ -35,7 +36,7 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a1a' },
+    { media: '(prefers-color-scheme: dark)', color: '#090d16' },
   ],
 }
 
@@ -46,8 +47,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
-      <head>
-        <script
+      <body className={`${poppins.className} antialiased`}>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -64,8 +67,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className={`${poppins.className} antialiased`}>
         <ThemeProvider>
           <LanguageProvider>
             {children}

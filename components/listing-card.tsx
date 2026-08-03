@@ -226,7 +226,7 @@ export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
-    const shareUrl = `${window.location.origin}/#opportunity-${listing.id}`
+    const shareUrl = `${window.location.origin}/listing/${listing.id}`
     navigator.clipboard.writeText(shareUrl)
     setCopiedShare(true)
     setTimeout(() => setCopiedShare(false), 2000)
