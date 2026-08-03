@@ -18,6 +18,7 @@ import { MediaLibraryTab } from './admin/admin-media-library'
 import { SuggestedUpdatesDiff } from './admin/suggested-updates-diff'
 import { TrashCenter } from './admin/trash-center'
 import { TeamTab } from './admin/admin-team'
+import { AdminSettingsTab } from './admin/admin-settings'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -197,6 +198,10 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
 
           {currentView === 'team' && (
             <TeamTab currentUserEmail={user.email || ''} />
+          )}
+
+          {currentView === 'settings' && (
+            <AdminSettingsTab user={user} roleName={roleName} />
           )}
 
         </main>
