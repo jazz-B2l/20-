@@ -31,9 +31,12 @@ import {
   Cog,
   Compass,
   Pill,
-  Dna
+  Dna,
+  StickyNote,
+  Zap
 } from 'lucide-react'
 import { FilterTooltip } from '@/components/ui/filter-tooltip'
+import { ProgramNoteModal, ProgramNoteTarget } from '@/components/program-note-modal'
 
 export interface ListingCardProps {
   listing: {
@@ -75,7 +78,7 @@ export interface ListingCardProps {
 }
 
 // Helper function to resolve study domain icon, text color, and subtle tinted background
-function getDomainTheme(domainNameFr?: string, facultyNameFr?: string) {
+function getDomainTheme(domainNameFr?: string | null, facultyNameFr?: string | null) {
   const text = `${domainNameFr || ''} ${facultyNameFr || ''}`.toLowerCase()
 
   // 1. Chemistry (Glass Flasks / Bottles / Reagents)
@@ -205,10 +208,12 @@ function getUniversityInitials(name: string): string {
 }
 
 export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const [isExpanded, setIsExpanded] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [copiedShare, setCopiedShare] = useState(false)
+  const [noteTarget, setNoteTarget] = useState<ProgramNoteTarget | null>(null)
+  const [isNoteOpen, setIsNoteOpen] = useState(false)
 
   const [expandedOffers, setExpandedOffers] = useState<Record<string, boolean>>(() => {
     if (listing.offers.length === 1) {
@@ -253,8 +258,9 @@ export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
     }
   })
 
-  const formattedDeadline = earliestDeadlineDate 
-    ? earliestDeadlineDate.toLocaleDateString(language === 'ar' ? 'ar-DZ' : 'en-US', { day: 'numeric', month: 'short' }) 
+  const targetDateStr: string | null = earliestDeadlineDate ? (earliestDeadlineDate as Date).toISOString() : null
+  const formattedDeadline = targetDateStr
+    ? new Date(targetDateStr).toLocaleDateString(language === 'ar' ? 'ar-DZ' : 'en-US', { day: 'numeric', month: 'short' }) 
     : (language === 'ar' ? 'غير محدد' : 'Not specified')
 
   // Compute Urgency
@@ -490,6 +496,26 @@ export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const titleName = language === 'ar' ? (offer.specialty_ar || offer.specialty_fr) : (offer.specialty_fr || offer.specialty_ar)
+                          setNoteTarget({
+                            id: offer.id,
+                            title: titleName,
+                            universityName: university,
+                            facultyName: translateFacultyName(offer.faculty_name || '', language),
+                            level: offer.level
+                          })
+                          setIsNoteOpen(true)
+                        }}
+                        className="inline-flex items-center justify-center bg-amber-500/15 dark:bg-amber-400/20 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-orange-500/40 hover:border-orange-500/70 shadow-[0_0_8px_rgba(249,115,22,0.2)] hover:shadow-[0_0_12px_rgba(249,115,22,0.35)] text-xs font-extrabold py-1 px-2.5 rounded-lg transition-all duration-200 cursor-pointer transform active:scale-95 select-none"
+                        title={language === 'ar' ? 'إضافة ملاحظة أو اقتراح على هذا البرنامج' : 'Add Note / Suggestion'}
+                      >
+                        <span>{t('note.btn')}</span>
+                      </button>
+
                       {offer.portal_url && offer.is_open !== false && (
                         <a
                           href={offer.portal_url}
@@ -551,6 +577,13 @@ export function ListingCard({ listing, viewMode = 'grid' }: ListingCardProps) {
           </div>
         </div>
       )}
+
+      {/* Program Note Modal Popup */}
+      <ProgramNoteModal
+        isOpen={isNoteOpen}
+        onClose={() => setIsNoteOpen(false)}
+        program={noteTarget}
+      />
     </div>
   )
 }

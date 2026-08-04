@@ -24,9 +24,35 @@ const translations: Record<Language, Record<string, string>> = {
     'home.welcome': 'Welcome to the 20% Mobility Portal',
     'home.subtitle': 'Explore available master degree programs across Algerian universities',
 
-    // Academic Opportunities Explorer
+    // Academic Opportunities Explorer & Filter Tabs
     'explorer.hero_title': "Explore the 20% of what you don't know",
     'explorer.hero_subtitle': 'Discover 20% Master quotas, Concours, and academic opportunities across Algerian universities.',
+    'explorer.tab_all': 'All Opportunities',
+    'explorer.tab_masters': 'Master 20% Quotas',
+    'explorer.tab_concours': 'Concours & Schools',
+    'explorer.tab_doctorate': 'Doctorate (Soon)',
+    'explorer.sort_by': 'Sort by',
+    'explorer.sort_newest': 'Recently Published',
+    'explorer.sort_deadline': 'Closest Deadline',
+    'explorer.sort_popularity': 'Most Popular',
+    'explorer.sort_alphabetical': 'Alphabetical (A-Z)',
+    'explorer.results_found': 'opportunities found',
+    'explorer.sidebar_closing_soon': 'Closing Soon (≤ 7 Days)',
+    'explorer.sidebar_trending': 'Trending Study Domains',
+    'explorer.sidebar_recent': 'Recently Added',
+    'explorer.sidebar_announcements': 'Official Announcements',
+    'explorer.search_masters': 'Search Master 20% by university, specialty...',
+    'explorer.all': 'All',
+
+    // Filter Bar Translations
+    'filter.all_wilayas': 'All Regions / Wilayas (58)',
+    'filter.all_domains': 'All Study Domains',
+    'filter.all_statuses': 'All Statuses',
+    'filter.status_open': 'Open Registrations',
+    'filter.status_closed': 'Closed',
+    'filter.status_closing_soon': 'Closing Soon',
+    'filter.reset': 'Reset Filters',
+    'filter.no_results': 'No opportunities match your current filters.',
 
     // Public Browse Page
     'browse.title': 'Browse Master Degrees',
@@ -116,6 +142,24 @@ const translations: Record<Language, Record<string, string>> = {
     'form.email': 'Your Email (Optional)',
     'form.submit': 'Submit',
     'form.thanks': 'Thank you for your feedback!',
+
+    // Program Student Note Modal
+    'note.btn': 'Note / Suggestion',
+    'note.modal_title': 'Submit Student Note / Suggestion',
+    'note.modal_subtitle': 'Share your note, feedback, or update suggestion about this program with the platform administration.',
+    'note.program_label': 'Selected Program',
+    'note.university_label': 'University & Faculty',
+    'note.type_label': 'Note Category',
+    'note.type_general': 'General Student Note',
+    'note.type_correction': 'Data Correction',
+    'note.type_deadline': 'Deadline Update',
+    'note.type_prerequisite': 'Prerequisites Info',
+    'note.message_label': 'Your Note / Details',
+    'note.message_placeholder': 'Write your notes or suggestions about this program here...',
+    'note.email_label': 'Your Contact Email (Optional)',
+    'note.email_placeholder': 'student@univ.dz',
+    'note.send_btn': 'Submit Note',
+    'note.success_msg': 'Your note has been submitted successfully to the admin queue!',
   },
   ar: {
     // Portal Header & Footer
@@ -127,9 +171,35 @@ const translations: Record<Language, Record<string, string>> = {
     'home.welcome': 'مرحباً بك في بوابة كوتا 20٪',
     'home.subtitle': 'استكشف برامج الماجستير المتاحة عبر الجامعات الجزائرية للتبادل الطلابي',
 
-    // Academic Opportunities Explorer
+    // Academic Opportunities Explorer & Filter Tabs
     'explorer.hero_title': 'استكشف الـ 20٪ من الفرص التي لم تكن تعرفها',
     'explorer.hero_subtitle': 'اكتشف عروض الماجستير كوتا 20٪، والمسابقات، والفرص الأكاديمية عبر الجامعات الجزائرية.',
+    'explorer.tab_all': 'جميع الفرص',
+    'explorer.tab_masters': 'ماجستير 20٪',
+    'explorer.tab_concours': 'المسابقات والمدارس العليا',
+    'explorer.tab_doctorate': 'الدكتوراه (قريباً)',
+    'explorer.sort_by': 'ترتيب حسب',
+    'explorer.sort_newest': 'الأحدث نشراً',
+    'explorer.sort_deadline': 'الأقرب موعداً',
+    'explorer.sort_popularity': 'الأكثر شعبية',
+    'explorer.sort_alphabetical': 'أبجدياً (أ-ي)',
+    'explorer.results_found': 'عرض متاح',
+    'explorer.sidebar_closing_soon': 'تنتهي قريباً (خلال أسبوع)',
+    'explorer.sidebar_trending': 'المجالات الأكثر تصفحاً',
+    'explorer.sidebar_recent': 'أضيفت مؤخراً',
+    'explorer.sidebar_announcements': 'إعلانات رسمية',
+    'explorer.search_masters': 'ابحث عن ماجستير 20٪ باسم الجامعة أو التخصص...',
+    'explorer.all': 'الكل',
+
+    // Filter Bar Translations
+    'filter.all_wilayas': 'جميع الولايات والجهات (58)',
+    'filter.all_domains': 'جميع المجالات الدراسية',
+    'filter.all_statuses': 'جميع الحالات',
+    'filter.status_open': 'مفتوح للتسجيل',
+    'filter.status_closed': 'مغلق',
+    'filter.status_closing_soon': 'ينتهي قريباً',
+    'filter.reset': 'إعادة ضبط الفلاتر',
+    'filter.no_results': 'لم يتم العثور على أي نتائج تطابق التصفية.',
 
     // Public Browse Page
     'browse.title': 'تصفح عروض الماجستير',
@@ -139,64 +209,41 @@ const translations: Record<Language, Record<string, string>> = {
     'browse.level': 'المستوى الدراسي',
     'browse.status': 'حالة التسجيل',
     'browse.all_domains': 'جميع المجالات الدراسية',
-    'browse.all_wilayas': 'جميع الولايات',
-    'browse.search_placeholder': 'ابحث عن جامعة، تخصص، أو برنامج...',
+    'browse.all_wilayas': 'جميع الولايات والجهات',
+    'browse.search_placeholder': 'ابحث باسم الجامعة، التخصص، أو الكلية...',
     'browse.reset_filters': 'إعادة ضبط التصفية',
-    'browse.available_programs': 'البرامج المتاحة',
-    'browse.universities_count': 'الجامعات',
+    'browse.available_programs': 'البرامج والتخصصات المتاحة',
+    'browse.universities_count': 'الجامعات والمؤسسات',
 
     // Listing Cards
-    'listing.specialty': 'التخصص',
-    'listing.university': 'الجامعة',
-    'nav.language': 'اللغة',
+    'listing.specialty': 'التخصص الدراسي',
+    'listing.university': 'الجامعة / المؤسسة',
+    'listing.seats': 'المقاعد المتاحة',
+    'listing.deadline': 'آخر أجل للتسجيل',
+    'listing.prerequisites': 'شروط الترشح والملاحظات',
+    'listing.portal': 'بوابة التسجيل',
+    'listing.apply_now': 'التسجيل عبر المنصة',
+    'listing.required_documents': 'الوثائق المطلوبة',
+    'listing.instructions': 'تعليمات هامة',
+    'listing.faculty': 'الكلية / المعهد',
+    'listing.website': 'الموقع الرسمي للجامعة',
 
-    // Hero Section
-    'hero.title': 'بوابة ماجستير 20٪ بالجزائر',
-    'hero.subtitle': 'استكشف واكتشف جميع مسابقات الماجستير للنسبة المتبقية (20٪) المفتوحة للطلبة في مختلف الجامعات الجزائرية.',
-    'hero.search_placeholder': 'ابحث عن تخصص، كلية، مدينة، أو جامعة...',
-    'hero.stat_universities': 'جامعة مسجلة',
-    'hero.stat_offers': 'عرض ماجستير متاح',
-    'hero.stat_wilayas': 'ولاية مغطاة',
-
-    // Filter Bar & Controls
-    'filter.wilaya': 'الولاية',
-    'filter.all_wilayas': 'جميع الولايات (58)',
-    'filter.domain': 'المجال الدراسي',
-    'filter.all_domains': 'جميع المجالات',
-    'filter.university': 'الجامعة',
-    'filter.all_universities': 'جميع الجامعات',
-    'filter.status': 'حالة التسجيل',
-    'filter.all_statuses': 'جميع الحالات',
-    'filter.status_open': 'مفتوح للتسجيل',
-    'filter.status_closed': 'مغلق',
-    'filter.reset': 'إعادة ضبط الفلاتر',
-    'filter.search': 'بحث التخصصات...',
-    'filter.no_results': 'لم يتم العثور على أي نتائج تطابق البحث.',
-
-    // Listing Cards
-    'card.open': 'مفتوح',
-    'card.closed': 'مغلق',
-    'card.deadline': 'آخر موعد:',
-    'card.seats': 'مقعد متاح',
-    'card.apply': 'رابط بوابة التسجيل الرسمية',
-    'card.faculty': 'الكلية / المعهد:',
-    'card.documents': 'الوثائق المطلوبة:',
-    'card.programs': 'برامج الماجستير المتاحة:',
-    'card.notes': 'ملاحظات هامة:',
-    'card.no_link': 'لم يتم إضافة رابط تسجيل رسمي بعد.',
-
-    // Admin Sidebar & Sections
+    // Admin Sidebar & Navigation
     'admin.dashboard': 'لوحة القيادة',
     'admin.universities': 'الجامعات والكليات',
-    'admin.listings': 'عروض ماجستير 20٪',
-    'admin.filters': 'نظام الفلاتر والمجالات',
-    'admin.suggestions': 'ملاحظات واقتراحات الطلبة',
-    'admin.settings': 'إعدادات النظام والأمان',
-    'admin.my_settings': 'إعداداتي الشخصية',
-    'admin.sign_out': 'تسجيل الخروج',
+    'admin.suggested_updates': 'الملاحظات والتحديثات المقترحة',
+    'admin.team': 'الفريق والأذونات',
+    'admin.settings': 'الإعدادات والنظام',
+    'admin.master_units': 'وحدات الماجستير 20٪',
+    'admin.community': 'المجتمع والطلاب',
+    'admin.administration': 'الإدارة الفنية',
+
+    // Admin Topbar
     'admin.search': 'بحث سريع...',
-    'admin.create': 'إنشاء جديد',
-    'admin.create_opportunity': 'إضافة عرض جديد',
+    'admin.create': 'إنشاء',
+    'admin.create_opportunity': 'عرض جديد',
+    'admin.my_settings': 'إعداداتي',
+    'admin.sign_out': 'تسجيل الخروج',
 
     // Admin Settings Page
     'settings.title': 'إعدادات النظام والأمان',
@@ -240,6 +287,24 @@ const translations: Record<Language, Record<string, string>> = {
     'form.email': 'بريدك الإلكتروني (اختياري)',
     'form.submit': 'إرسال الطلب',
     'form.thanks': 'شكراً جزيلاً على ملاحظاتك القيمّة!',
+
+    // Program Student Note Modal
+    'note.btn': 'إضافة ملاحظة / اقتراح',
+    'note.modal_title': 'إرسال ملاحظة أو اقتراح على البرنامج',
+    'note.modal_subtitle': 'شارِك ملاحظاتك، تصحيحاتك، أو اقتراحاتك حول هذا البرنامج الدراسي مع إدارة المنصة.',
+    'note.program_label': 'البرنامج المحدد',
+    'note.university_label': 'الجامعة والكلية',
+    'note.type_label': 'نوع الملاحظة',
+    'note.type_general': 'ملاحظة عامة من طالب',
+    'note.type_correction': 'تصحيح معلومات',
+    'note.type_deadline': 'تحديث الآجال والتاريخ',
+    'note.type_prerequisite': 'تحديث الشروط والملف',
+    'note.message_label': 'تفاصيل الملاحظة / الاقتراح',
+    'note.message_placeholder': 'اكتب ملاحظاتك أو واقتراحاتك حول هذا البرنامج هنا...',
+    'note.email_label': 'البريد الإلكتروني للتواصل (اختياري)',
+    'note.email_placeholder': 'student@univ.dz',
+    'note.send_btn': 'إرسال الملاحظة',
+    'note.success_msg': 'تم إرسال ملاحظتك بنجاح إلى قائمة المراجعة للإدارة!',
   },
 }
 
@@ -266,6 +331,25 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [language, mounted])
 
   const t = (key: string): string => {
+    if (!key) return ''
+    let cleanKey = key.trim().replace(/^:/, '')
+    if (cleanKey === 'expbrer.tab _ masters' || cleanKey === 'explorer.tab _ masters') cleanKey = 'explorer.tab_masters'
+    if (cleanKey === 'explorer.tab_eoneours' || cleanKey === 'explorer.tab_concours 2') cleanKey = 'explorer.tab_concours'
+    if (cleanKey === 'closing_soon') cleanKey = 'filter.status_closing_soon'
+    if (cleanKey === 'all') cleanKey = 'explorer.all'
+
+    const directTranslation = translations[language]?.[cleanKey] || translations['en']?.[cleanKey]
+    if (directTranslation) return directTranslation
+
+    // Smart typo & partial key fallback mapping
+    const lower = cleanKey.toLowerCase()
+    if (lower.includes('doctorate')) return translations[language]?.['explorer.tab_doctorate'] || (language === 'ar' ? 'الدكتوراه' : 'Doctorate')
+    if (lower.includes('eoneour') || lower.includes('concour')) return translations[language]?.['explorer.tab_concours'] || (language === 'ar' ? 'المسابقات والمدارس العليا' : 'Concours & Schools')
+    if (lower.includes('master')) return translations[language]?.['explorer.tab_masters'] || (language === 'ar' ? 'ماجستير 20٪' : 'Master 20% Quotas')
+    if (lower.includes('sort')) return translations[language]?.['explorer.sort_by'] || (language === 'ar' ? 'ترتيب حسب' : 'Sort by')
+    if (lower.includes('trending')) return translations[language]?.['explorer.sidebar_trending'] || (language === 'ar' ? 'المجالات الأكثر تصفحاً' : 'Trending Study Domains')
+    if (lower.includes('closing')) return translations[language]?.['explorer.sidebar_closing_soon'] || (language === 'ar' ? 'تنتهي قريباً' : 'Closing Soon')
+
     return translations[language]?.[key] || translations['en']?.[key] || key
   }
 

@@ -18,8 +18,11 @@ import {
   CheckCircle2,
   Info,
   Globe,
-  School
+  School,
+  StickyNote,
+  Zap
 } from 'lucide-react'
+import { ProgramNoteModal } from '@/components/program-note-modal'
 
 interface ListingDetailProps {
   listing: {
@@ -80,6 +83,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   const [correctionEmail, setCorrectionEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
 
   const specialty = language === 'ar' ? listing.specialty_ar || listing.specialty_fr : listing.specialty_fr
   const university = language === 'ar' ? listing.university.name_ar || listing.university.name_fr : listing.university.name_fr
@@ -349,17 +353,24 @@ export function ListingDetail({ listing }: ListingDetailProps) {
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         )}
+
+        <button
+          type="button"
+          onClick={() => setIsNoteModalOpen(true)}
+          className="inline-flex items-center justify-center bg-amber-500/15 dark:bg-amber-400/20 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-orange-500/40 hover:border-orange-500/70 shadow-[0_0_8px_rgba(249,115,22,0.2)] hover:shadow-[0_0_12px_rgba(249,115,22,0.35)] text-sm font-extrabold py-2.5 px-6 rounded-xl transition-all duration-200 cursor-pointer transform active:scale-95 select-none"
+        >
+          <span>{t('note.btn')}</span>
+        </button>
       </div>
 
       {/* Community Suggestion / Correction Form */}
       <div className="bg-secondary/40 border border-border rounded-xl p-5 shadow-xs">
         {!showCorrectionForm ? (
           <button
-            onClick={() => setShowCorrectionForm(true)}
-            className="w-full py-2.5 px-4 bg-card border border-border hover:border-primary/35 rounded-xl text-xs font-bold text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            onClick={() => setIsNoteModalOpen(true)}
+            className="w-full py-2.5 px-4 bg-amber-500/15 dark:bg-amber-400/20 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-orange-500/40 hover:border-orange-500/70 shadow-[0_0_8px_rgba(249,115,22,0.2)] hover:shadow-[0_0_12px_rgba(249,115,22,0.35)] rounded-xl text-xs font-extrabold transition-all duration-200 flex items-center justify-center cursor-pointer transform active:scale-95 select-none"
           >
-            <ShieldAlert className="h-3.5 w-3.5" />
-            <span>{t('form.suggest_update')}</span>
+            <span>{t('note.modal_title')}</span>
           </button>
         ) : (
           <form onSubmit={handleSubmitCorrection} className="space-y-4">
@@ -425,6 +436,18 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           </form>
         )}
       </div>
+
+      <ProgramNoteModal
+        isOpen={isNoteModalOpen}
+        onClose={() => setIsNoteModalOpen(false)}
+        program={{
+          id: listing.id,
+          title: specialty,
+          universityName: university,
+          facultyName: listing.faculty_name || undefined,
+          level: listing.level
+        }}
+      />
 
     </div>
   )
