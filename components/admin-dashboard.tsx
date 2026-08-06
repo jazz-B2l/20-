@@ -19,6 +19,7 @@ import { SuggestedUpdatesDiff } from './admin/suggested-updates-diff'
 import { TrashCenter } from './admin/trash-center'
 import { TeamTab } from './admin/admin-team'
 import { AdminSettingsTab } from './admin/admin-settings'
+import { AuditLogsTab } from './admin/admin-audit-logs'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -49,41 +50,11 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
 
   // State Management
   const [currentView, setCurrentView] = useState<AdminView>('dashboard')
+  // Command palette and wizard states
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  // Sync state from query parameters on load/reload
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const viewParam = params.get('view') as AdminView
-      if (viewParam) {
-        setCurrentView(viewParam)
-      }
-    }
-  }, [])
-
-  // Sync state to query parameters on route change
-  const handleViewChange = (view: AdminView) => {
-    setCurrentView(view)
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href)
-      url.searchParams.set('view', view)
-      window.history.pushState({}, '', url.toString())
-    }
-  }
-
-  // DB Shared lists states
-  const [domains, setDomains] = useState<any[]>([])
-  const [sessions, setSessions] = useState<any[]>([])
-  const [events, setEvents] = useState<any[]>([])
-  const [requiredDocs, setRequiredDocs] = useState<any[]>([])
-  const [sources, setSources] = useState<any[]>([])
-  const [announcements, setAnnouncements] = useState<any[]>([])
-  const [userRoles, setUserRoles] = useState<any[]>([])
-  const [auditLogs, setAuditLogs] = useState<any[]>([])
 
   // Global keydown listeners for shortcuts (Ctrl+K, Esc, N)
   useEffect(() => {
@@ -117,37 +88,26 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
     return () => window.removeEventListener('keydown', handleGlobalShortcuts)
   }, [wizardOpen, commandPaletteOpen])
 
-  // Fetch lists based on selected view to avoid over-fetching
+  // Sync state from query parameters on load/reload
   useEffect(() => {
-    const fetchViewData = async () => {
-      if (currentView === 'domains') {
-        const { data } = await supabase.from('domains').select('*').order('name_fr')
-        setDomains(data || [])
-      } else if (currentView === 'sessions') {
-        const { data } = await supabase.from('sessions').select('*, opportunity:opportunities(title_fr)').order('academic_year')
-        setSessions(data || [])
-      } else if (currentView === 'events') {
-        const { data } = await supabase.from('events').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
-        setEvents(data || [])
-      } else if (currentView === 'required-documents') {
-        const { data } = await supabase.from('required_documents').select('*, session:sessions(academic_year, opportunity:opportunities(title_fr))')
-        setRequiredDocs(data || [])
-      } else if (currentView === 'sources') {
-        const { data } = await supabase.from('sources').select('*')
-        setSources(data || [])
-      } else if (currentView === 'announcements') {
-        const { data } = await supabase.from('announcements').select('*, university:universities(name_fr)').order('created_at', { ascending: false })
-        setAnnouncements(data || [])
-      } else if (currentView === 'users') {
-        const { data } = await supabase.from('user_roles').select('*')
-        setUserRoles(data || [])
-      } else if (currentView === 'audit-logs') {
-        const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false })
-        setAuditLogs(data || [])
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const viewParam = params.get('view') as AdminView
+      if (viewParam) {
+        setCurrentView(viewParam)
       }
     }
-    fetchViewData()
-  }, [currentView])
+  }, [])
+
+  // Sync state to query parameters on route change
+  const handleViewChange = (view: AdminView) => {
+    setCurrentView(view)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('view', view)
+      window.history.pushState({}, '', url.toString())
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -202,6 +162,10 @@ export function AdminDashboard({ user, roleName = 'viewer' }: { user: User, role
 
           {currentView === 'settings' && (
             <AdminSettingsTab user={user} roleName={roleName} />
+          )}
+
+          {currentView === 'audit-logs' && (
+            <AuditLogsTab roleName={roleName} />
           )}
 
         </main>

@@ -10,7 +10,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  History
 } from 'lucide-react'
 
 export type AdminView =
@@ -20,6 +21,8 @@ export type AdminView =
   | 'suggested-updates'
   | 'team'
   | 'settings'
+  | 'audit-logs'
+  | 'media-library'
 
 interface SidebarItem {
   id: AdminView
@@ -77,6 +80,7 @@ export function AdminSidebar({
   const adminItems: SidebarItem[] = []
   if (canAccessTeam) {
     adminItems.push({ id: 'team', label: t('admin.team'), icon: Users })
+    adminItems.push({ id: 'audit-logs', label: t('admin.audit_logs'), icon: History })
   }
   adminItems.push({ id: 'settings', label: t('admin.settings'), icon: Settings })
 

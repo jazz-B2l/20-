@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { FilterTooltip } from '@/components/ui/filter-tooltip'
+import { cn } from '@/lib/utils'
 
 import {
   Sun,
@@ -26,6 +27,7 @@ import {
   Edit2,
   Check,
   X,
+  User as UserIcon,
   Search,
   RefreshCw,
   AlertCircle,
@@ -77,6 +79,12 @@ export function AdminSettingsTab({ user, roleName }: { user: User; roleName?: st
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Profile Settings State
+  const [name, setName] = useState('')
+  const [initialName, setInitialName] = useState('')
+  const [nameLoading, setNameLoading] = useState(false)
+  const [nameMsg, setNameMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Domains State
   const [domains, setDomains] = useState<DomainItem[]>([])
@@ -143,10 +151,28 @@ export function AdminSettingsTab({ user, roleName }: { user: User; roleName?: st
     setFiltersLoading(false)
   }
 
+  const fetchUserProfile = async () => {
+    if (!user?.id) return
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single()
+      if (!error && data) {
+        setName(data.name || '')
+        setInitialName(data.name || '')
+      }
+    } catch (err) {
+      console.error('Error fetching user profile name:', err)
+    }
+  }
+
   useEffect(() => {
     fetchDomains()
     fetchFilters()
-  }, [])
+    fetchUserProfile()
+  }, [user])
 
   // 4. Reset Password Handler
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -215,6 +241,42 @@ export function AdminSettingsTab({ user, roleName }: { user: User; roleName?: st
       })
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setNameMsg(null)
+    if (!user?.id) return
+    if (name.trim() === initialName) {
+      setNameMsg({
+        type: 'success',
+        text: language === 'ar' ? 'تم حفظ التغييرات!' : 'No changes to save.'
+      })
+      return
+    }
+
+    setNameLoading(true)
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ name: name.trim() })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      setInitialName(name.trim())
+      setNameMsg({
+        type: 'success',
+        text: language === 'ar' ? 'تم تحديث الاسم بنجاح!' : 'Profile name updated successfully!'
+      })
+    } catch (err: any) {
+      setNameMsg({
+        type: 'error',
+        text: err.message || (language === 'ar' ? 'فشل تحديث الاسم.' : 'Failed to update name.')
+      })
+    } finally {
+      setNameLoading(false)
     }
   }
 
@@ -482,6 +544,76 @@ export function AdminSettingsTab({ user, roleName }: { user: User; roleName?: st
       {/* ========================================================================= */}
       {activeTab === 'general' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Card: Account Profile Settings */}
+          <Card className="border border-border shadow-xs">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <UserIcon className="h-4.5 w-4.5 text-primary" />
+                {language === 'ar' ? 'الملف الشخصي' : 'Account Profile'}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {language === 'ar' ? 'إدارة الاسم الشخصي المعروض وحسابك البريدي.' : 'Manage your public display name and contact details.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                {nameMsg && (
+                  <div className={cn(
+                    "p-3 rounded-lg text-xs flex items-center gap-2 border",
+                    nameMsg.type === 'success' 
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                      : "bg-destructive/10 text-destructive border-destructive/20"
+                  )}>
+                    {nameMsg.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                    <span>{nameMsg.text}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-email">{language === 'ar' ? 'البريد الإلكتروني (حسابك)' : 'Email Address'}</Label>
+                  <Input
+                    id="profile-email"
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="bg-muted text-muted-foreground border-border text-xs cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-name">{language === 'ar' ? 'الاسم الكامل' : 'Full Name'}</Label>
+                  <Input
+                    id="profile-name"
+                    type="text"
+                    placeholder={language === 'ar' ? 'أدخل اسمك الكامل' : 'Enter your full name'}
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="bg-card border-border text-xs"
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={nameLoading}
+                  className="bg-primary hover:bg-primary/95 text-primary-foreground font-semibold px-4 cursor-pointer text-xs"
+                >
+                  {nameLoading ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      {language === 'ar' ? 'جاري الحفظ...' : 'Saving Changes...'}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-3.5 w-3.5 mr-1.5" />
+                      {language === 'ar' ? 'حفظ التغييرات' : 'Save Changes'}
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
           {/* Card 1: Appearance & Theme */}
           <Card className="border border-border shadow-xs">
             <CardHeader className="pb-4">
@@ -616,7 +748,7 @@ export function AdminSettingsTab({ user, roleName }: { user: User; roleName?: st
           </Card>
 
           {/* Card 3: Security & Reset Password */}
-          <Card className="border border-border shadow-xs lg:col-span-2">
+          <Card className="border border-border shadow-xs">
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <KeyRound className="h-4.5 w-4.5 text-emerald-500" />
