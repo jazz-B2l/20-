@@ -8,6 +8,7 @@ import {
   Shield,
   ShieldCheck,
   Eye,
+  EyeOff,
   Crown,
   Mail,
   User,
@@ -17,7 +18,8 @@ import {
   ChevronDown,
   Check,
   Search,
-  UserPlus
+  UserPlus,
+  Lock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -218,6 +220,9 @@ export function TeamTab({ currentUserEmail }: { currentUserEmail: string }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createEmail, setCreateEmail] = useState('')
   const [createPassword, setCreatePassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [createRoleId, setCreateRoleId] = useState('')
   const [createRoleName, setCreateRoleName] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
@@ -262,6 +267,9 @@ export function TeamTab({ currentUserEmail }: { currentUserEmail: string }) {
   const resetCreateForm = () => {
     setCreateEmail('')
     setCreatePassword('')
+    setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
     setCreateError(null)
   }
 
@@ -303,6 +311,12 @@ export function TeamTab({ currentUserEmail }: { currentUserEmail: string }) {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (createPassword !== confirmPassword) {
+      setCreateError(language === 'ar' ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match')
+      return
+    }
+
     setCreateLoading(true)
     setCreateError(null)
 
@@ -540,16 +554,55 @@ export function TeamTab({ currentUserEmail }: { currentUserEmail: string }) {
 
             <div className="space-y-1.5">
               <Label htmlFor="c_password">{language === 'ar' ? 'كلمة المرور المؤقتة' : 'Temporary Password'}</Label>
-              <Input
-                id="c_password" type="password" required minLength={8}
-                placeholder={language === 'ar' ? '8 أحرف على الأقل' : 'At least 8 characters'}
-                value={createPassword}
-                onChange={e => setCreatePassword(e.target.value)}
-                className="bg-card border-border"
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="c_password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  placeholder={language === 'ar' ? '8 أحرف على الأقل' : 'At least 8 characters'}
+                  value={createPassword}
+                  onChange={e => setCreatePassword(e.target.value)}
+                  className="pl-9 pr-10 rtl:pr-9 rtl:pl-10 bg-card border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 rtl:left-3 rtl:right-auto top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors cursor-pointer"
+                  title={showPassword ? (language === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (language === 'ar' ? 'إظهار كلمة المرور' : 'Show password')}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               <p className="text-[11px] text-muted-foreground">
                 {language === 'ar' ? 'يمكن للمستخدم تغيير كلمة المرور بعد أول تسجيل دخول.' : 'The user can change this after logging in.'}
               </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="c_confirm_password">{language === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 rtl:right-3 rtl:left-auto top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="c_confirm_password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  placeholder={language === 'ar' ? 'أعد كتابة كلمة المرور' : 'Re-enter temporary password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="pl-9 pr-10 rtl:pr-9 rtl:pl-10 bg-card border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 rtl:left-3 rtl:right-auto top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors cursor-pointer"
+                  title={showConfirmPassword ? (language === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (language === 'ar' ? 'إظهار كلمة المرور' : 'Show password')}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Role grid */}
