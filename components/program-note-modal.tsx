@@ -62,6 +62,17 @@ export function ProgramNoteModal({ isOpen, onClose, program }: ProgramNoteModalP
       return
     }
 
+    if (!email.trim()) {
+      setErrorMessage(language === 'ar' ? 'الرجاء إدخال البريد الإلكتروني للتواصل.' : 'Please enter your contact email address.')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      setErrorMessage(language === 'ar' ? 'الرجاء إدخال بريد إلكتروني صحيح.' : 'Please enter a valid email address.')
+      return
+    }
+
     setIsSubmitting(true)
     setErrorMessage('')
 
@@ -235,14 +246,15 @@ export function ProgramNoteModal({ isOpen, onClose, program }: ProgramNoteModalP
               />
             </div>
 
-            {/* Optional Email Contact */}
+            {/* Required Email Contact */}
             <div className="space-y-1.5">
               <Label htmlFor="note-email" className="text-xs font-bold text-foreground">
-                {t('note.email_label')}
+                {t('note.email_label')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="note-email"
                 type="email"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('note.email_placeholder')}

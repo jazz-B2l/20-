@@ -156,7 +156,7 @@ const translations: Record<Language, Record<string, string>> = {
     'note.type_prerequisite': 'Prerequisites Info',
     'note.message_label': 'Your Note / Details',
     'note.message_placeholder': 'Write your notes or suggestions about this program here...',
-    'note.email_label': 'Your Contact Email (Optional)',
+    'note.email_label': 'Your Contact Email',
     'note.email_placeholder': 'student@univ.dz',
     'note.send_btn': 'Submit Note',
     'note.success_msg': 'Your note has been submitted successfully to the admin queue!',
@@ -284,7 +284,7 @@ const translations: Record<Language, Record<string, string>> = {
     // General Form Actions & Messages
     'form.suggest_update': 'الإبلاغ عن تصحيح أو إضافة',
     'form.message': 'رسالتك والتفاصيل',
-    'form.email': 'بريدك الإلكتروني (اختياري)',
+    'form.email': 'بريدك الإلكتروني (مطلوب)',
     'form.submit': 'إرسال الطلب',
     'form.thanks': 'شكراً جزيلاً على ملاحظاتك القيمّة!',
 
@@ -301,7 +301,7 @@ const translations: Record<Language, Record<string, string>> = {
     'note.type_prerequisite': 'تحديث الشروط والملف',
     'note.message_label': 'تفاصيل الملاحظة / الاقتراح',
     'note.message_placeholder': 'اكتب ملاحظاتك أو واقتراحاتك حول هذا البرنامج هنا...',
-    'note.email_label': 'البريد الإلكتروني للتواصل (اختياري)',
+    'note.email_label': 'البريد الإلكتروني للتواصل',
     'note.email_placeholder': 'student@univ.dz',
     'note.send_btn': 'إرسال الملاحظة',
     'note.success_msg': 'تم إرسال ملاحظتك بنجاح إلى قائمة المراجعة للإدارة!',
