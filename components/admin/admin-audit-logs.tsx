@@ -15,7 +15,9 @@ import {
   ArrowRight,
   Database,
   FileJson,
-  X
+  X,
+  Trash2,
+  RotateCcw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,6 +40,7 @@ interface AuditLog {
   old_data: Record<string, any> | null
   new_data: Record<string, any> | null
   timestamp: string
+  deleted_at?: string | null
 }
 
 export function AuditLogsTab({ roleName }: { roleName: string }) {
@@ -59,16 +62,33 @@ export function AuditLogsTab({ roleName }: { roleName: string }) {
   // Selected log for detailed view modal
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
 
+  // View mode: 'active' (active logs) or 'trash' (recycle bin)
+  const [viewMode, setViewMode] = useState<'active' | 'trash'>('active')
+  const [actionLoading, setActionLoading] = useState(false)
+
   const loadData = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      // 1. Fetch audit logs
-      const { data: logsData, error: logsError } = await supabase
+      // 0. Auto-purge soft-deleted logs older than 3 days
+      const threeDaysAgo = new Date()
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+      await supabase
         .from('audit_logs')
-        .select('*')
-        .order('timestamp', { ascending: false })
+        .delete()
+        .not('deleted_at', 'is', null)
+        .lt('deleted_at', threeDaysAgo.toISOString())
+
+      // 1. Fetch audit logs based on viewMode
+      let query = supabase.from('audit_logs').select('*')
+      if (viewMode === 'active') {
+        query = query.is('deleted_at', null)
+      } else {
+        query = query.not('deleted_at', 'is', null)
+      }
+      
+      const { data: logsData, error: logsError } = await query.order('timestamp', { ascending: false })
 
       if (logsError) throw logsError
 
@@ -104,7 +124,121 @@ export function AuditLogsTab({ roleName }: { roleName: string }) {
     if (roleName === 'super_admin' || roleName === 'owner') {
       loadData()
     }
-  }, [roleName])
+  }, [roleName, viewMode])
+
+  const handleCleanLogs = async () => {
+    if (!confirm(language === 'ar' 
+      ? 'هل أنت متأكد من نقل جميع السجلات الحالية إلى سلة المحذوفات؟ سيتم حذفها نهائياً بعد 3 أيام.' 
+      : 'Are you sure you want to move all current logs to the Recycle Bin? They will be permanently deleted after 3 days.')) return
+
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .update({ deleted_at: new Date().toISOString() })
+        .is('deleted_at', null)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(language === 'ar' ? 'فشل تنظيف السجلات: ' + err.message : 'Failed to clean logs: ' + err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleSoftDeleteLog = async (id: string) => {
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRestoreLog = async (id: string) => {
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .update({ deleted_at: null })
+        .eq('id', id)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleRestoreAllLogs = async () => {
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .update({ deleted_at: null })
+        .not('deleted_at', 'is', null)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteForeverLog = async (id: string) => {
+    if (!confirm(language === 'ar' 
+      ? 'هل أنت متأكد من حذف هذا السجل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.' 
+      : 'Are you sure you want to delete this log permanently? This action cannot be undone.')) return
+
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteAllForeverLogs = async () => {
+    if (!confirm(language === 'ar' 
+      ? 'تحذير: سيتم حذف جميع السجلات الموجودة في سلة المحذوفات نهائياً. لا يمكن التراجع عن هذا الإجراء!' 
+      : 'WARNING: This will permanently delete all logs in the recycle bin. This action cannot be undone! Proceed?')) return
+
+    setActionLoading(true)
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .delete()
+        .not('deleted_at', 'is', null)
+
+      if (error) throw error
+      loadData()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   // Deny access if user is not super_admin or owner
   if (roleName !== 'super_admin' && roleName !== 'owner') {
@@ -221,14 +355,68 @@ export function AuditLogsTab({ roleName }: { roleName: string }) {
               : 'Track changes made by team members, university admins, and system operators.'}
           </p>
         </div>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="self-start sm:self-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-          title={language === 'ar' ? 'تحديث البيانات' : 'Refresh'}
-        >
-          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* View mode switcher */}
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border shrink-0 text-xs">
+            <button
+              onClick={() => setViewMode('active')}
+              className={cn(
+                "px-3 py-1.5 font-semibold rounded-lg transition-all cursor-pointer",
+                viewMode === 'active' 
+                  ? "bg-card text-foreground shadow-xs border border-border" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {language === 'ar' ? 'السجلات النشطة' : 'Active Logs'}
+            </button>
+            <button
+              onClick={() => setViewMode('trash')}
+              className={cn(
+                "px-3 py-1.5 font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+                viewMode === 'trash' 
+                  ? "bg-card text-foreground shadow-xs border border-border" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {language === 'ar' ? 'سلة المحذوفات' : 'Recycle Bin'}
+            </button>
+          </div>
+
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            title={language === 'ar' ? 'تحديث البيانات' : 'Refresh'}
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          </button>
+
+          {/* Clean / Purge / Restore buttons */}
+          {viewMode === 'active' ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={actionLoading || loading || logs.length === 0}
+              onClick={handleCleanLogs}
+              className="gap-1.5 text-xs cursor-pointer border-border hover:bg-muted"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+              {language === 'ar' ? 'تنظيف السجلات' : 'Clean Logs'}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={actionLoading || loading || logs.length === 0}
+              onClick={handleRestoreAllLogs}
+              className="gap-1.5 text-xs cursor-pointer border-border hover:bg-muted"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-primary" />
+              {language === 'ar' ? 'استعادة الكل' : 'Restore All'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -376,15 +564,34 @@ export function AuditLogsTab({ roleName }: { roleName: string }) {
                     <span className="truncate">{date}</span>
                   </div>
 
-                  {/* View Action Details */}
-                  <div className="text-center">
+                  {/* View / Manage Action Details */}
+                  <div className="flex items-center justify-center gap-1 shrink-0">
                     <button
                       onClick={() => setSelectedLog(log)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                       title={language === 'ar' ? 'عرض تفاصيل العملية' : 'View Action Details'}
                     >
-                      <Eye className="h-4.5 w-4.5" />
+                      <Eye className="h-4 w-4" />
                     </button>
+                    {viewMode === 'active' ? (
+                      <button
+                        onClick={() => handleSoftDeleteLog(log.id)}
+                        disabled={actionLoading}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                        title={language === 'ar' ? 'نقل لسلة المحذوفات' : 'Move to Recycle Bin'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRestoreLog(log.id)}
+                        disabled={actionLoading}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                        title={language === 'ar' ? 'استعادة' : 'Restore'}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )
