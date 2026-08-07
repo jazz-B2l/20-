@@ -97,9 +97,7 @@ export function AdminSidebar({
         isCollapsed ? 'px-3 justify-between' : 'px-4 justify-between'
       )}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-extrabold text-lg select-none shadow-xs shrink-0">
-            20
-          </div>
+          <img src="/logo.png" alt="20%" className="w-10 h-10 shrink-0 object-contain" />
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-foreground leading-tight truncate">20% CMS</span>

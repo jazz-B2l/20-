@@ -368,17 +368,13 @@ export function BrowseClient({
               {language === 'ar' ? (
                 <>
                   استكشف الـ{' '}
-                  <span className="bg-primary text-primary-foreground px-2.5 py-0.5 rounded-[12px] font-black inline-flex items-center justify-center shadow-xs mx-1 align-middle text-xl sm:text-2xl md:text-3xl">
-                    20%
-                  </span>{' '}
+                  <img src="/logo.png" alt="20%" className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 inline-flex align-middle mx-2 shrink-0 object-contain" />{' '}
                   من الفرص التي لم تكن تعرفها
                 </>
               ) : (
                 <>
                   Explore the{' '}
-                  <span className="bg-primary text-primary-foreground px-2.5 py-0.5 rounded-[12px] font-black inline-flex items-center justify-center shadow-xs mx-1 align-middle text-xl sm:text-2xl md:text-3xl">
-                    20%
-                  </span>{' '}
+                  <img src="/logo.png" alt="20%" className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 inline-flex align-middle mx-2 shrink-0 object-contain" />{' '}
                   of what you don't know
                 </>
               )}

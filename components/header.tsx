@@ -42,9 +42,7 @@ export function Header({ language: propLanguage, setLanguage: propSetLanguage }:
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-3 select-none">
-            <div className="h-10 px-3 bg-primary text-primary-foreground rounded-[12px] flex items-center justify-center font-extrabold text-lg shrink-0 transition-colors">
-              20%
-            </div>
+            <img src="/logo.png" alt="20%" className="h-12 w-12 object-contain shrink-0 transition-transform hover:scale-105" />
             <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
               {currentLanguage === 'ar' ? 'بوابة الماجستير الجزائرية 20٪' : 'Algeria Master Portal'}
             </span>
